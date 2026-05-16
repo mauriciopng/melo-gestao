@@ -1,0 +1,20 @@
+{
+  "name": "Melo Digital Studio",
+  "short_name": "Melo Digital",
+  "description": "Gestão do seu negócio criativo",
+  "start_url": "/melo/dashboard",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/melo-logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "pt-BR"
+}
