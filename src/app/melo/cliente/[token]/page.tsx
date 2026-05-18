@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import type { ServiceStage, ServiceComment } from '@/lib/melo/types';
+import { readDb } from '@/lib/melo/db';
+import type { Service, ServiceStage, ServiceComment } from '@/lib/melo/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,11 +23,20 @@ interface PublicService {
 
 async function getService(token: string): Promise<PublicService | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-    const res = await fetch(`${baseUrl}/api/melo/client-service?token=${token}`, { cache: 'no-store' });
-    if (!res.ok) return null;
-    return res.json();
+    const services = await readDb<Service[]>('services', []);
+    const svc = services.find(s => s.clientToken === token);
+    if (!svc) return null;
+    return {
+      id:        svc.id,
+      name:      svc.name,
+      client:    svc.client,
+      status:    svc.status,
+      progress:  svc.progress,
+      startDate: svc.startDate,
+      deadline:  svc.deadline,
+      stages:    svc.stages  || [],
+      comments:  (svc.comments || []).filter(c => c.isPublic),
+    };
   } catch {
     return null;
   }
