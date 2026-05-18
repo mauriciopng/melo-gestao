@@ -6,21 +6,33 @@ import Link from 'next/link';
 import {
   SquaresFour, CurrencyDollar, Calendar, Briefcase,
   ChartLineUp, Question, MagnifyingGlass, Bell,
-  SignOut, Sun, Moon, X, CaretRight, FolderOpen,
+  SignOut, Sun, Moon, X, CaretRight,
 } from '@phosphor-icons/react';
 import { useTheme } from '@/lib/melo/theme';
 import { MeloIcon } from '@/components/melo/MeloLogo';
 
+// Documentos removido a pedido do usuário
 const NAV = [
-  { href: '/melo/dashboard',  icon: SquaresFour,   label: 'Dashboard' },
+  { href: '/melo/dashboard',  icon: SquaresFour,    label: 'Dashboard' },
   { href: '/melo/finances',   icon: CurrencyDollar, label: 'Finanças' },
-  { href: '/melo/agenda',     icon: Calendar,      label: 'Agenda' },
-  { href: '/melo/services',   icon: Briefcase,     label: 'Serviços' },
-  { href: '/melo/documents',  icon: FolderOpen,    label: 'Documentos' },
-  { href: '/melo/reminders',  icon: Bell,          label: 'Alarmes' },
-  { href: '/melo/statistics', icon: ChartLineUp,   label: 'Estatísticas' },
-  { href: '/melo/help',       icon: Question,      label: 'Ajuda' },
+  { href: '/melo/agenda',     icon: Calendar,       label: 'Agenda' },
+  { href: '/melo/services',   icon: Briefcase,      label: 'Serviços' },
+  { href: '/melo/reminders',  icon: Bell,           label: 'Alarmes' },
+  { href: '/melo/statistics', icon: ChartLineUp,    label: 'Estatísticas' },
+  { href: '/melo/help',       icon: Question,       label: 'Ajuda' },
 ];
+
+// Itens do bottom nav mobile (5 itens + toggle tema)
+const MOBILE_NAV = [
+  { href: '/melo/dashboard',  icon: SquaresFour,    label: 'Início' },
+  { href: '/melo/finances',   icon: CurrencyDollar, label: 'Finanças' },
+  { href: '/melo/agenda',     icon: Calendar,       label: 'Agenda' },
+  { href: '/melo/services',   icon: Briefcase,      label: 'Serviços' },
+  { href: '/melo/statistics', icon: ChartLineUp,    label: 'Stats' },
+];
+
+// Intervalo mínimo entre verificações de notificação: 4 horas
+const NOTIF_INTERVAL_MS = 4 * 60 * 60 * 1000;
 
 type SearchResult = {
   finances: { id: string; description: string; amount: number; type: string }[];
@@ -48,12 +60,21 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         if (!r.ok) { localStorage.removeItem('melo_token'); router.replace('/melo'); }
         else {
           setAuthChecked(true);
+
           // Registra o Service Worker para notificações push
           if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/melo-sw.js', { scope: '/' }).catch(() => {});
           }
-          // Dispara verificação de notificações em background
-          fetch('/api/melo/cron/check-notifications', { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+
+          // Verifica notificações no máximo a cada 4 horas — evita spam
+          const lastCheck = parseInt(localStorage.getItem('melo_last_notif_check') || '0', 10);
+          const now = Date.now();
+          if (now - lastCheck > NOTIF_INTERVAL_MS) {
+            localStorage.setItem('melo_last_notif_check', String(now));
+            fetch('/api/melo/cron/check-notifications', {
+              headers: { Authorization: `Bearer ${token}` },
+            }).catch(() => {});
+          }
         }
       })
       .catch(() => { localStorage.removeItem('melo_token'); router.replace('/melo'); });
@@ -77,6 +98,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem('melo_token') || '';
     await fetch('/api/melo/auth', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     localStorage.removeItem('melo_token');
+    localStorage.removeItem('melo_last_notif_check');
     router.replace('/melo');
   }
 
@@ -101,13 +123,12 @@ function ShellInner({ children }: { children: React.ReactNode }) {
     }`;
 
   return (
-    /* ── Fixed full-screen shell — fixes iOS scroll ── */
     <div
       style={{
         position: 'fixed', inset: 0,
         paddingTop: 'env(safe-area-inset-top)',
         background: c.bg,
-        color: c.t1,            /* herança de cor para todos os filhos */
+        color: c.t1,
         transition: 'background 300ms, color 300ms',
         transitionTimingFunction: ease,
       }}
@@ -162,7 +183,6 @@ function ShellInner({ children }: { children: React.ReactNode }) {
 
         {/* ── Main column ── */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-          {/* Header */}
           <header
             className="backdrop-blur-xl h-[58px] px-4 md:px-5 flex items-center justify-between flex-shrink-0 z-10"
             style={{
@@ -197,7 +217,6 @@ function ShellInner({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
-          {/* Scrollable content */}
           <main
             className="flex-1 overflow-y-auto pb-20 md:pb-0"
             style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
@@ -219,14 +238,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         }}
       >
         <div className="flex">
-          {/* Dashboard, Finanças, Agenda, Serviços, Documentos */}
-          {[
-            { href: '/melo/dashboard', icon: SquaresFour,   label: 'Início' },
-            { href: '/melo/finances',  icon: CurrencyDollar, label: 'Finanças' },
-            { href: '/melo/agenda',    icon: Calendar,      label: 'Agenda' },
-            { href: '/melo/services',  icon: Briefcase,     label: 'Serviços' },
-            { href: '/melo/documents', icon: FolderOpen,    label: 'Docs' },
-          ].map(({ href, icon: Icon, label }) => {
+          {MOBILE_NAV.map(({ href, icon: Icon, label }) => {
             const active = pathname === href;
             return (
               <Link key={href} href={href}
@@ -237,7 +249,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
-          {/* Modo noturno */}
+          {/* Tema */}
           <button onClick={toggle}
             className="flex-1 flex flex-col items-center pt-2.5 pb-2 gap-0.5 active:opacity-60 transition-opacity"
             style={{ color: isDark ? '#3B82F6' : c.muted }}>
