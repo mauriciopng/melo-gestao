@@ -49,6 +49,19 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(entry, { status: 201 });
 }
 
+export async function PUT(req: NextRequest) {
+  if (!(await auth(req))) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+
+  const body    = await req.json();
+  const entries = await readDb<FinanceEntry[]>('finances', []);
+  const idx     = entries.findIndex(e => e.id === body.id);
+  if (idx === -1) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 });
+
+  entries[idx] = { ...entries[idx], ...body };
+  await writeDb('finances', entries);
+  return NextResponse.json(entries[idx]);
+}
+
 export async function DELETE(req: NextRequest) {
   if (!(await auth(req))) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
