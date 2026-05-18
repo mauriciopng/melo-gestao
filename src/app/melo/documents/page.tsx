@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import AppShell from '@/components/melo/AppShell';
 import {
-  MagnifyingGlass, Plus, Trash2, FileDoc, FileText,
+  MagnifyingGlass, Plus, FileDoc, FileText,
   CloudArrowUp, ArrowClockwise,
   Eye, Download,
 } from '@phosphor-icons/react';
+import { Trash2 } from 'lucide-react';
 import { useTheme } from '@/lib/melo/theme';
 import type { MeloDocument, DocumentContent, DocumentItem } from '@/lib/melo/types';
 

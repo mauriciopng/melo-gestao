@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import AppShell from '@/components/melo/AppShell';
-import { Plus, Trash2, X, TrendingUp, TrendingDown, DollarSign, ChatCircle, PaperPlaneTilt } from '@phosphor-icons/react';
-import { Check } from 'lucide-react';
+import { Plus, X, ChatCircle, PaperPlaneTilt } from '@phosphor-icons/react';
+import { Trash2, TrendingUp, TrendingDown, DollarSign, Check } from 'lucide-react';
 import { useTheme } from '@/lib/melo/theme';
 import type { FinanceEntry } from '@/lib/melo/types';
 

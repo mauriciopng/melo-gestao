@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import AppShell from '@/components/melo/AppShell';
 import {
-  Plus, Trash2, X, Briefcase, ChevronDown, ShareNetwork,
+  Plus, X, Briefcase, ShareNetwork,
   ChatCircle, ArrowLeft, PaperPlaneTilt, Eye, EyeSlash,
   CheckCircle, Circle, DotsThreeVertical,
 } from '@phosphor-icons/react';
+import { Trash2, ChevronDown } from 'lucide-react';
 import { useTheme } from '@/lib/melo/theme';
 import type { Service, ServiceStage, ServiceComment } from '@/lib/melo/types';
 
