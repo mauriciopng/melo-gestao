@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { readDb } from '@/lib/melo/db';
 import type { Service, ServiceStage, ServiceComment } from '@/lib/melo/types';
+import AdminControls from './AdminControls';
 
 export const dynamic = 'force-dynamic';
 
@@ -215,6 +216,9 @@ export default async function ClientPage({ params }: { params: Promise<{ token: 
             </div>
           </div>
         )}
+
+        {/* Admin controls — visíveis apenas para o dono do app (token válido no dispositivo) */}
+        <AdminControls serviceId={service.id} initialStages={service.stages} />
 
         {/* Footer */}
         <div style={{ textAlign: 'center', paddingTop: '0.5rem' }}>
