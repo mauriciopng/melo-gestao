@@ -73,7 +73,54 @@ function parseDocumentChat(text: string): Partial<DocumentContent> {
   };
 }
 
-type DocTab = 'list' | 'chat' | 'onedrive';
+type DocTab = 'list' | 'chat' | 'orcamento' | 'onedrive';
+
+/* ── Parser específico para o orçamento Alfa Glass ── */
+interface AlfaGlassItem { qtde: string; descricao: string; alt: string; larg: string; m2: string; valorUnit: string; subtotal: string; }
+interface AlfaGlassData {
+  os: string; data: string; clienteNome: string; clienteCpfCnpj: string; clienteIE: string;
+  clienteEndereco: string; clienteBairro: string; clienteCep: string;
+  itens: AlfaGlassItem[]; formasPagamento: string; total: string; observacoes: string;
+}
+function parseAlfaGlass(text: string): AlfaGlassData {
+  const field = (keys: string[]) => {
+    for (const k of keys) {
+      const m = text.match(new RegExp(`${k}\\s*:?\\s*([^\\n]+)`, 'i'));
+      if (m) return m[1].trim();
+    }
+    return '';
+  };
+  // Parse itens — formato: qtde | descrição | alt | larg | m2 | valorUnit | subtotal
+  const itensBlock = text.match(/itens?\s*:?\s*\n?([\s\S]*?)(?:\n(?:total|pagamento|obs|forma|$))/i);
+  const itens: AlfaGlassItem[] = [];
+  if (itensBlock) {
+    const lines = itensBlock[1].split('\n').filter(l => l.trim());
+    for (const line of lines) {
+      const parts = line.split(/[|,;]/).map(p => p.trim());
+      if (parts.length >= 2) {
+        itens.push({
+          qtde: parts[0] || '', descricao: parts[1] || '',
+          alt: parts[2] || '', larg: parts[3] || '', m2: parts[4] || '',
+          valorUnit: parts[5] || '', subtotal: parts[6] || '',
+        });
+      }
+    }
+  }
+  return {
+    os:             field(['os', 'ordem de serviço', 'numero', 'número']),
+    data:           field(['data']),
+    clienteNome:    field(['cliente', 'nome', 'razão social', 'razao social']),
+    clienteCpfCnpj: field(['cpf', 'cnpj', 'cpf/cnpj', 'documento']),
+    clienteIE:      field(['ie', 'inscrição estadual', 'inscricao estadual']),
+    clienteEndereco:field(['endereço', 'endereco', 'rua', 'logradouro']),
+    clienteBairro:  field(['bairro']),
+    clienteCep:     field(['cep']),
+    formasPagamento:field(['pagamento', 'forma de pagamento', 'formas de pagamento']),
+    total:          field(['total', 'valor total', 'valor']),
+    observacoes:    field(['obs', 'observações', 'observacoes']),
+    itens,
+  };
+}
 
 interface ODFile {
   id: string;
@@ -104,6 +151,14 @@ export default function DocumentsPage() {
   const [generating, setGenerating]   = useState(false);
   const [previewHtml, setPreviewHtml] = useState('');
   const [uploadingOD, setUploadingOD] = useState(false);
+
+  /* Alfa Glass orçamento state */
+  const [alfaInput,   setAlfaInput]   = useState('');
+  const [alfaParsed,  setAlfaParsed]  = useState<AlfaGlassData | null>(null);
+  const [alfaStep,    setAlfaStep]    = useState<'input'|'preview'>('input');
+  const [alfaHtml,    setAlfaHtml]    = useState('');
+  const [alfaLoading, setAlfaLoading] = useState(false);
+  const [alfaSaving,  setAlfaSaving]  = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('od_client_id') || '';
@@ -302,7 +357,7 @@ export default function DocumentsPage() {
 
         {/* Tabs */}
         <div className="flex rounded-xl overflow-hidden" style={{ border: `1px solid ${c.border}` }}>
-          {([['list','Documentos'],['chat','Criar via Chat'],['onedrive','OneDrive']] as [DocTab, string][]).map(([t, label]) => (
+          {([['list','Documentos'],['orcamento','Orçamento'],['chat','Chat'],['onedrive','OneDrive']] as [DocTab, string][]).map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)}
               className="flex-1 py-2.5 text-[12px] font-semibold transition-all"
               style={{ background: tab===t?'#1D6EF7':(isDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'),
@@ -353,6 +408,115 @@ export default function DocumentsPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── ORÇAMENTO ALFA GLASS TAB ── */}
+        {tab === 'orcamento' && (
+          <div className="space-y-4">
+            {alfaStep === 'input' && (
+              <div className="rounded-2xl overflow-hidden" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+                <div className="p-4" style={{ borderBottom: `1px solid ${c.border}` }}>
+                  <p className="font-semibold text-[14px]" style={{ color: c.t1 }}>Orçamento — Alfa Glass Solution</p>
+                  <p className="text-[12px] mt-1" style={{ color: c.muted }}>
+                    Preencha os dados abaixo. Use o formato de exemplo:
+                  </p>
+                  <div className="mt-2 p-3 rounded-xl text-[11px] leading-relaxed font-mono"
+                    style={{ background: isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)', color: c.muted }}>
+                    {`Cliente: João Silva\nCPF/CNPJ: 123.456.789-00\nEndereço: Rua das Flores, 123\nBairro: Centro\nCEP: 20000-000\nOS: 001\nData: 15/01/2026\nItens:\n2 | Vidro temperado 3mm | 1,50 | 1,20 | 3,60 | 180,00 | 648,00\n1 | Espelho bisotê | 0,80 | 0,60 | 0,48 | 250,00 | 120,00\nTotal: 768,00\nPagamento: 50% entrada + 50% na entrega\nObs: Instalação inclusa`}
+                  </div>
+                  <p className="text-[10px] mt-2" style={{ color: c.muted }}>
+                    Itens: qtde | descrição | altura | largura | m² | valor/unit | subtotal
+                  </p>
+                </div>
+                <div className="p-4">
+                  <textarea
+                    value={alfaInput}
+                    onChange={e => setAlfaInput(e.target.value)}
+                    placeholder="Digite os dados do orçamento aqui..."
+                    rows={10}
+                    className="w-full resize-none text-[13px] bg-transparent outline-none leading-relaxed font-mono"
+                    style={{ color: c.t1 }}
+                  />
+                  <button onClick={async () => {
+                    if (!alfaInput.trim()) return;
+                    setAlfaLoading(true);
+                    const parsed = parseAlfaGlass(alfaInput);
+                    setAlfaParsed(parsed);
+                    const res = await fetch('/api/melo/documents/orcamento-pdf', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
+                      body: JSON.stringify(parsed),
+                    });
+                    const { html } = await res.json();
+                    setAlfaHtml(html);
+                    setAlfaStep('preview');
+                    setAlfaLoading(false);
+                  }} disabled={!alfaInput.trim() || alfaLoading}
+                    className="w-full mt-3 py-3 rounded-xl font-semibold text-[14px] text-white disabled:opacity-40 active:scale-[0.98] transition-all"
+                    style={{ background: 'linear-gradient(135deg,#1a3a6b,#0d2456)', boxShadow: '0 2px 12px rgba(26,58,107,0.4)' }}>
+                    {alfaLoading ? 'Gerando prévia...' : 'Gerar Prévia do Orçamento'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {alfaStep === 'preview' && alfaParsed && (
+              <div className="space-y-3">
+                {/* Preview */}
+                <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${c.border}` }}>
+                  <div className="p-3 flex items-center justify-between"
+                    style={{ background: isDark?'rgba(26,58,107,0.2)':'rgba(26,58,107,0.08)', borderBottom: `1px solid ${c.border}` }}>
+                    <p className="text-[13px] font-semibold" style={{ color: '#1a3a6b' }}>Prévia do Orçamento</p>
+                    <button onClick={() => { setAlfaStep('input'); }}
+                      className="text-[11px]" style={{ color: c.muted }}>← Editar dados</button>
+                  </div>
+                  <iframe srcDoc={alfaHtml} className="w-full" style={{ height: 500, border: 'none', background: '#fff' }} title="Prévia" />
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-2">
+                  {/* PDF */}
+                  <button onClick={() => {
+                    const w = window.open('', '_blank');
+                    if (!w) return;
+                    w.document.write(alfaHtml);
+                    w.document.close();
+                    setTimeout(() => w.print(), 600);
+                  }}
+                    className="w-full py-3 rounded-xl font-semibold text-[14px] text-white active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    style={{ background: 'linear-gradient(135deg,#16A34A,#15803D)', boxShadow: '0 2px 12px rgba(22,163,74,0.3)' }}>
+                    Exportar PDF
+                  </button>
+
+                  {/* Save to DB */}
+                  <button onClick={async () => {
+                    setAlfaSaving(true);
+                    await fetch('/api/melo/documents', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
+                      body: JSON.stringify({
+                        name: `Orçamento — ${alfaParsed.clienteNome || 'Cliente'} — ${alfaParsed.os || new Date().toLocaleDateString('pt-BR')}`,
+                        type: 'orcamento', clientName: alfaParsed.clienteNome || '',
+                        content: { number: alfaParsed.os, clientName: alfaParsed.clienteNome,
+                          clientAddress: alfaParsed.clienteEndereco, clientPhone: '',
+                          serviceName: '', description: '', items: [],
+                          totalValue: parseFloat(alfaParsed.total?.replace(/[^\d,]/g,'').replace(',','.') || '0') || 0,
+                          deadline: '', paymentTerms: alfaParsed.formasPagamento,
+                          validity: '10 dias', notes: alfaParsed.observacoes },
+                      }),
+                    });
+                    setAlfaSaving(false);
+                    setAlfaStep('input'); setAlfaInput(''); setAlfaParsed(null); setAlfaHtml('');
+                    loadDocs();
+                  }} disabled={alfaSaving}
+                    className="w-full py-3 rounded-xl font-semibold text-[13px] disabled:opacity-40 active:scale-[0.98] transition-all"
+                    style={{ background: c.card, border: `1px solid ${c.border}`, color: c.muted }}>
+                    {alfaSaving ? 'Salvando...' : 'Salvar no histórico'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
