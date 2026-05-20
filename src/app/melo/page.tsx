@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 
 function LoginInner() {
   const router = useRouter();
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [pin,      setPin]      = useState('');
+  const [error,    setError]    = useState('');
+  const [loading,  setLoading]  = useState(false);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -25,7 +25,7 @@ function LoginInner() {
     e.preventDefault();
     if (!pin.trim()) return;
     setLoading(true); setError('');
-    const res = await fetch('/api/melo/auth', {
+    const res  = await fetch('/api/melo/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin }),
@@ -38,11 +38,12 @@ function LoginInner() {
 
   if (checking) {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: '#050510', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'fixed', inset: 0, background: '#0C0C0A',
+        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ display: 'flex', gap: 6 }}>
-          {[0, 1, 2].map(i => (
-            <div key={i} className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"
-              style={{ animationDelay: `${i * 150}ms` }} />
+          {[0,1,2].map(i => (
+            <div key={i} className="w-1.5 h-1.5 rounded-full animate-pulse"
+              style={{ background: '#D97706', animationDelay: `${i * 150}ms` }} />
           ))}
         </div>
       </div>
@@ -51,7 +52,6 @@ function LoginInner() {
 
   return (
     <>
-      {/* Fundo responsivo via CSS — mobile usa WPP, desktop usa melo-bg */}
       <style>{`
         .melo-login-root {
           background-image: url('/WPP---IPHONE.jpg');
@@ -62,100 +62,118 @@ function LoginInner() {
         @media (min-width: 768px) {
           .melo-login-root {
             background-image: url('/melo-bg.jpg');
-            background-position: center center;
           }
         }
       `}</style>
-    <div
-      className="melo-login-root flex flex-col items-end justify-end px-5"
-      style={{
-        position: 'fixed', inset: 0,
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}
-    >
-      {/* Gradiente preto no topo para suavizar se a imagem cortar */}
-      <div className="absolute inset-x-0 top-0 pointer-events-none" style={{ height: '22%', background: 'linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, transparent 100%)' }} />
 
-      {/* Gradiente escuro na base para o card */}
-      <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: '60%', background: 'linear-gradient(to top, rgba(4,4,18,0.92) 40%, transparent 100%)' }} />
+      <div className="melo-login-root"
+        style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'flex-end', justifyContent: 'flex-end', padding: '0 20px',
+          paddingBottom: 'env(safe-area-inset-bottom)' }}>
 
-      {/* Double-bezel card — posicionado na parte inferior */}
-      <div className="relative z-10 w-full max-w-sm pb-8"
-        style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}>
-        <div
-          className="rounded-[1.75rem] p-1.5"
-          style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
-          }}
-        >
-          <div
-            className="rounded-[calc(1.75rem-6px)] px-7 py-7"
-            style={{
-              background: 'rgba(12,12,18,0.88)',
+        {/* Top vignette */}
+        <div style={{ position: 'absolute', inset: 0, top: 0, height: '30%', pointerEvents: 'none',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%)' }} />
+
+        {/* Bottom vignette */}
+        <div style={{ position: 'absolute', inset: 0, top: 'auto', bottom: 0, height: '65%', pointerEvents: 'none',
+          background: 'linear-gradient(to top, rgba(8,6,4,0.96) 40%, transparent 100%)' }} />
+
+        {/* Card */}
+        <div style={{
+          position: 'relative', zIndex: 10, width: '100%', maxWidth: 360,
+          paddingBottom: 'max(2rem, env(safe-area-inset-bottom))',
+        }}>
+          {/* Outer bezel */}
+          <div style={{
+            borderRadius: 28, padding: 6,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.09)',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.03)',
+          }}>
+            {/* Inner card */}
+            <div style={{
+              borderRadius: 22, padding: '28px 28px 24px',
+              background: 'rgba(10,10,8,0.90)',
               border: '1px solid rgba(255,255,255,0.06)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-            }}
-          >
-            <form onSubmit={handleLogin}>
-              <p className="text-white text-[20px] font-bold tracking-tight mb-0.5">Bem-vindo de volta</p>
-              <p className="text-[#7C7C88] text-[13px] mb-6">Digite seu PIN para acessar</p>
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+            }}>
+              <form onSubmit={handleLogin}>
+                <p style={{ color: '#F0F0EC', fontSize: 20, fontWeight: 800,
+                  letterSpacing: '-0.03em', marginBottom: 4 }}>
+                  Bem-vindo de volta
+                </p>
+                <p style={{ color: '#5C5C54', fontSize: 13, marginBottom: 24 }}>
+                  Digite seu PIN para acessar
+                </p>
 
-              <label className="block text-[11px] font-semibold text-[#6C6C78] uppercase tracking-[0.14em] mb-2">
-                PIN de acesso
-              </label>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 700,
+                  color: '#5C5C54', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>
+                  PIN de acesso
+                </label>
 
-              {/* Input */}
-              <div
-                className="rounded-[14px] p-0.5 mb-4"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}
-              >
-                <input
-                  type="password" inputMode="numeric" pattern="[0-9]*"
-                  value={pin} onChange={e => setPin(e.target.value)}
-                  placeholder="••••" maxLength={8} autoFocus required
-                  className="w-full py-3 text-center text-2xl tracking-[0.5em] text-white bg-transparent outline-none placeholder-[#2C2C3C] rounded-[13px]"
-                  style={{ fontVariantNumeric: 'tabular-nums' }}
-                />
-              </div>
-
-              {error && (
-                <div className="mb-4 px-4 py-2.5 rounded-xl text-[#E5484D] text-[13px] text-center"
-                  style={{ background: 'rgba(229,72,77,0.12)', border: '1px solid rgba(229,72,77,0.22)' }}>
-                  {error}
+                <div style={{
+                  borderRadius: 14, padding: 4, marginBottom: 16,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}>
+                  <input
+                    type="password" inputMode="numeric" pattern="[0-9]*"
+                    value={pin} onChange={e => setPin(e.target.value)}
+                    placeholder="••••" maxLength={8} autoFocus required
+                    style={{
+                      width: '100%', padding: '12px 0',
+                      textAlign: 'center', fontSize: 24, letterSpacing: '0.5em',
+                      color: '#F0F0EC', background: 'transparent',
+                      outline: 'none', border: 'none', borderRadius: 10,
+                      fontVariantNumeric: 'tabular-nums', fontFamily: 'inherit',
+                    }}
+                  />
                 </div>
-              )}
 
-              {/* Button */}
-              <div className="rounded-2xl p-0.5"
-                style={{ background: 'linear-gradient(145deg,rgba(29,110,247,0.7),rgba(18,73,194,0.7))' }}>
-                <button
-                  type="submit" disabled={loading || !pin}
-                  className="w-full py-3 rounded-[14px] font-semibold text-[15px] text-white disabled:opacity-40 active:scale-[0.98] transition-all"
-                  style={{
-                    background: loading || !pin ? 'rgba(29,110,247,0.5)' : 'linear-gradient(145deg,#1D6EF7,#1249C2)',
+                {error && (
+                  <div style={{
+                    marginBottom: 16, padding: '10px 16px', borderRadius: 12,
+                    background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                    color: '#FCA5A5', fontSize: 13, textAlign: 'center',
+                  }}>
+                    {error}
+                  </div>
+                )}
+
+                {/* Amber button */}
+                <div style={{
+                  borderRadius: 16, padding: 2,
+                  background: 'linear-gradient(145deg, rgba(29,110,247,0.6), rgba(146,64,14,0.5))',
+                }}>
+                  <button type="submit" disabled={loading || !pin} style={{
+                    width: '100%', padding: '13px 0',
+                    borderRadius: 14, fontWeight: 700, fontSize: 15,
+                    color: '#fff', cursor: loading || !pin ? 'not-allowed' : 'pointer',
+                    opacity: loading || !pin ? 0.45 : 1,
+                    border: 'none',
+                    background: loading || !pin
+                      ? 'rgba(29,110,247,0.4)'
+                      : 'linear-gradient(145deg, #1D6EF7, #1249C2)',
                     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)',
-                    transitionDuration: '180ms',
-                    transitionTimingFunction: 'cubic-bezier(0.32,0.72,0,1)',
-                  }}
-                >
-                  {loading
-                    ? <span className="flex items-center justify-center gap-2">
+                    transition: 'all 180ms cubic-bezier(0.32,0.72,0,1)',
+                    fontFamily: 'inherit',
+                  }}>
+                    {loading ? (
+                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                         <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                         Verificando...
                       </span>
-                    : 'Entrar'
-                  }
-                </button>
-              </div>
-            </form>
+                    ) : 'Entrar'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

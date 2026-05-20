@@ -27,13 +27,16 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',   // status bar transparente — cor do app aparece atrás
     title: 'Melo Digital',
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#ffffff',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)',  color: '#0C0C0A' },
+    { media: '(prefers-color-scheme: light)', color: '#F6F6F3' },
+  ],
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

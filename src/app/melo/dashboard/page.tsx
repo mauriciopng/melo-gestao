@@ -7,23 +7,22 @@ import Link from 'next/link';
 import { useTheme } from '@/lib/melo/theme';
 import type { DashboardSummary } from '@/lib/melo/types';
 
-const STATUS_COLORS: Record<string, string> = {
-  proposal: 'bg-[#F59E0B]/12 text-[#D97706]',
-  in_progress: 'bg-[#1D6EF7]/12 text-[#1D6EF7]',
-  review: 'bg-[#8B5CF6]/12 text-[#7C3AED]',
-  completed: 'bg-[#16A34A]/12 text-[#16A34A]',
-  cancelled: 'bg-[#6B6B64]/12 text-[#6B6B64]',
+const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+  proposal:    { bg: 'rgba(29,110,247,0.1)',   text: '#1D6EF7' },
+  in_progress: { bg: 'rgba(29,110,247,0.12)',  text: '#1D6EF7' },
+  review:      { bg: 'rgba(139,92,246,0.12)', text: '#8B5CF6' },
+  completed:   { bg: 'rgba(22,163,74,0.12)',  text: '#16A34A' },
+  cancelled:   { bg: 'rgba(107,114,128,0.1)', text: '#6B7280' },
 };
 const STATUS_LABELS: Record<string, string> = {
-  proposal: 'Proposta', in_progress: 'Em andamento', review: 'Revisão',
-  completed: 'Concluído', cancelled: 'Cancelado',
+  proposal: 'Proposta', in_progress: 'Em andamento',
+  review: 'Revisão', completed: 'Concluído', cancelled: 'Cancelado',
 };
 const EVENT_DOT: Record<string, string> = {
   meeting: '#1D6EF7', delivery: '#16A34A', shoot: '#D97706',
-  call: '#7C3AED', edit: '#E5484D', other: '#6B6B64',
+  call: '#8B5CF6', edit: '#EF4444', other: '#6B7280',
 };
 
-const ease = 'cubic-bezier(0.32,0.72,0,1)';
 const fmt = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function greeting() {
@@ -34,39 +33,41 @@ function todayStr() {
   return new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-function SkeletonCard({ className = '' }: { className?: string }) {
-  return <div className={`rounded-2xl animate-pulse ${className}`} />;
+function Skeleton({ w = '100%', h = 80, r = 16 }: { w?: string | number; h?: number; r?: number }) {
+  const { isDark } = useTheme();
+  return (
+    <div className="animate-pulse" style={{
+      width: w, height: h, borderRadius: r,
+      background: isDark ? '#1C1C18' : '#EBEBEA',
+    }} />
+  );
 }
 
-function BezelCard({ children, className = '', style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+/* ── Surface card ── */
+function Card({ children, style = {}, onClick }: {
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+  onClick?: () => void;
+}) {
   const { isDark, c } = useTheme();
   return (
-    <div
-      className={`rounded-2xl p-[5px] ${className}`}
-      style={{
-        background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.025)',
-        border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
-        ...style,
-      }}
-    >
-      <div
-        className="h-full rounded-[calc(1rem-5px)]"
-        style={{
-          background: c.card,
-          color: c.t1,
-          border: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`,
-          boxShadow: isDark ? 'inset 0 1px 0 rgba(255,255,255,0.04)' : 'inset 0 1px 0 rgba(255,255,255,0.9)',
-        }}
-      >
-        {children}
-      </div>
+    <div onClick={onClick} style={{
+      borderRadius: 18,
+      background: c.card,
+      border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+      boxShadow: isDark
+        ? '0 1px 2px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03)'
+        : '0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9)',
+      ...style,
+    }}>
+      {children}
     </div>
   );
 }
 
 export default function DashboardPage() {
-  const { v, isDark, c } = useTheme();
-  const [data, setData] = useState<DashboardSummary | null>(null);
+  const { isDark, c } = useTheme();
+  const [data,    setData]    = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -75,248 +76,281 @@ export default function DashboardPage() {
       .then(r => r.json()).then(d => { setData(d); setLoading(false); });
   }, []);
 
-  const profit = data?.netProfit ?? 0;
+  const profit     = data?.netProfit ?? 0;
   const isPositive = profit >= 0;
 
   return (
     <AppShell>
-      <div className="p-4 md:p-6 space-y-4 max-w-5xl mx-auto">
+      <div style={{ padding: '20px 16px 8px', maxWidth: 720, margin: '0 auto' }}>
 
-        {/* Greeting */}
-        <div className="pt-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-1"
-            style={{ color: c.muted }}>
+        {/* ── Greeting ── */}
+        <div style={{ marginBottom: 24 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.12em', color: c.muted, marginBottom: 4 }}>
             {todayStr()}
           </p>
-          <h2 className="text-[22px] md:text-[26px] font-bold tracking-tight"
-            style={{ color: c.t1 }}>
-            {greeting()}, Mauricio
-          </h2>
+          <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.03em',
+            color: c.t1, lineHeight: 1.2 }}>
+            {greeting()}, Maurício
+          </h1>
         </div>
 
         {loading ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {[0,1,2].map(i => <SkeletonCard key={i} className={`h-28 ${isDark ? 'bg-[#1C1C18]' : 'bg-[#EBEBEA]'}`} />)}
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton h={112} />
+              <div className="flex flex-col gap-2">
+                <Skeleton h={52} />
+                <Skeleton h={52} />
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              {[0,1,2].map(i => <SkeletonCard key={i} className={`h-24 ${isDark ? 'bg-[#1C1C18]' : 'bg-[#EBEBEA]'}`} />)}
+            <div className="grid grid-cols-3 gap-2">
+              <Skeleton h={88} /><Skeleton h={88} /><Skeleton h={88} />
             </div>
+            <Skeleton h={180} />
           </div>
         ) : (
-          <>
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Revenue — blue gradient */}
-              <div
-                className="rounded-[1.25rem] p-[5px]"
-                style={{
-                  background: 'linear-gradient(145deg, rgba(29,110,247,0.3), rgba(18,73,194,0.2))',
-                  border: '1px solid rgba(29,110,247,0.2)',
-                }}
-              >
-                <div
-                  className="h-full rounded-[calc(1.25rem-5px)] px-5 py-4"
-                  style={{
-                    background: 'linear-gradient(145deg, #1D6EF7, #1249C2)',
-                    boxShadow: '0 6px 24px rgba(29,110,247,0.4), inset 0 1px 0 rgba(255,255,255,0.15)',
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[11px] font-semibold text-blue-200 uppercase tracking-[0.12em]">Receita</span>
-                    <TrendUp size={15} className="text-blue-300" weight="bold" />
+          <div className="flex flex-col gap-3">
+
+            {/* ── Row 1: KPIs ── */}
+            <div className="grid grid-cols-2 gap-3">
+
+              {/* Revenue — Blue accent card */}
+              <div style={{
+                borderRadius: 18, padding: '20px 20px 18px',
+                background: 'linear-gradient(145deg, #1D6EF7, #1249C2)',
+                boxShadow: '0 6px 24px rgba(29,110,247,0.4), inset 0 1px 0 rgba(255,255,255,0.15)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                    letterSpacing: '0.14em', color: 'rgba(191,219,254,0.85)' }}>
+                    Receita
+                  </span>
+                  <div style={{ width: 26, height: 26, borderRadius: 8,
+                    background: 'rgba(255,255,255,0.15)', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center' }}>
+                    <TrendUp size={13} color="white" weight="bold" />
                   </div>
-                  <p className="font-bold tracking-tight text-white truncate" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(14px,4.5vw,22px)' }}>
-                    {fmt(data?.totalIncome ?? 0)}
-                  </p>
-                  <p className="text-blue-300 text-[11px] mt-1">Este mês</p>
                 </div>
+                <p style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.04em',
+                  color: '#fff', fontVariantNumeric: 'tabular-nums',
+                  lineHeight: 1, marginBottom: 6, wordBreak: 'break-all' }}>
+                  {fmt(data?.totalIncome ?? 0)}
+                </p>
+                <p style={{ fontSize: 11, color: 'rgba(191,219,254,0.7)' }}>Este mês</p>
               </div>
 
-              {/* Expenses */}
-              <BezelCard>
-                <div className="px-5 py-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${v.muted}`}>Despesas</span>
-                    <TrendDown size={15} className="text-[#E5484D]" weight="bold" />
+              {/* Expenses + Profit stacked */}
+              <div className="flex flex-col gap-2 min-w-0">
+                <Card style={{ padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.12em', color: c.muted }}>Despesas</span>
+                    <TrendDown size={12} color="#EF4444" weight="bold" />
                   </div>
-                  <p className="font-bold tracking-tight truncate" style={{ color: c.t1, fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(14px,4.5vw,22px)' }}>
+                  <p style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.03em',
+                    color: c.t1, fontVariantNumeric: 'tabular-nums', wordBreak: 'break-all' }}>
                     {fmt(data?.totalExpenses ?? 0)}
                   </p>
-                  <p className={`text-[11px] mt-1 ${v.muted}`}>Este mês</p>
-                </div>
-              </BezelCard>
+                </Card>
 
-              {/* Net Profit */}
-              <BezelCard>
-                <div className="px-5 py-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${v.muted}`}>Lucro líquido</span>
-                    <div className={`w-2 h-2 rounded-full ${isPositive ? 'bg-[#16A34A]' : 'bg-[#E5484D]'}`}
-                      style={{ boxShadow: `0 0 6px ${isPositive ? '#16A34A' : '#E5484D'}` }} />
+                <Card style={{ padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.12em', color: c.muted }}>Lucro</span>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%',
+                      background: isPositive ? '#16A34A' : '#EF4444',
+                      boxShadow: `0 0 6px ${isPositive ? '#16A34A88' : '#EF444488'}` }} />
                   </div>
-                  <p className="font-bold tracking-tight truncate"
-                    style={{ color: isPositive ? '#16A34A' : '#E5484D', fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(14px,4.5vw,22px)' }}>
+                  <p style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.03em',
+                    color: isPositive ? '#16A34A' : '#EF4444',
+                    fontVariantNumeric: 'tabular-nums', wordBreak: 'break-all' }}>
                     {fmt(profit)}
                   </p>
-                  <p className={`text-[11px] mt-1 ${v.muted}`}>Este mês</p>
-                </div>
-              </BezelCard>
+                </Card>
+              </div>
             </div>
 
-            {/* Service counters */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* ── Row 2: Service counters strip ── */}
+            <div className="grid grid-cols-3 gap-2">
               {[
-                { icon: Briefcase, value: data?.activeServices ?? 0, label: 'Em andamento', color: '#1D6EF7', bg: isDark ? 'rgba(29,110,247,0.12)' : 'rgba(29,110,247,0.08)' },
-                { icon: Clock, value: data?.pendingServices ?? 0, label: 'Propostas', color: '#D97706', bg: isDark ? 'rgba(217,119,6,0.12)' : 'rgba(217,119,6,0.08)' },
-                { icon: CheckCircle, value: data?.completedServices ?? 0, label: 'Concluídos', color: '#16A34A', bg: isDark ? 'rgba(22,163,74,0.12)' : 'rgba(22,163,74,0.08)' },
-              ].map(({ icon: Icon, value, label, color, bg }) => (
-                <BezelCard key={label}>
-                  <div className="px-3 py-4 text-center">
-                    <div className="w-9 h-9 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: bg }}>
-                      <Icon size={18} style={{ color }} weight="fill" />
-                    </div>
-                    <p className={`text-[20px] font-bold tabular-nums ${v.t1}`} style={{ fontVariantNumeric: 'tabular-nums' }}>{value}</p>
-                    <p className={`text-[10.5px] font-medium mt-0.5 ${v.muted}`}>{label}</p>
+                { icon: Briefcase,   value: data?.activeServices  ?? 0, label: 'Em andamento', color: '#1D6EF7' },
+                { icon: Clock,       value: data?.pendingServices ?? 0, label: 'Propostas',    color: '#8B5CF6' },
+                { icon: CheckCircle, value: data?.completedServices ?? 0, label: 'Concluídos', color: '#16A34A' },
+              ].map(({ icon: Icon, value, label, color }) => (
+                <Card key={label} style={{ padding: '14px 12px', textAlign: 'center' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, margin: '0 auto 8px',
+                    background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon size={16} weight="fill" color={color} />
                   </div>
-                </BezelCard>
+                  <p style={{ fontSize: 22, fontWeight: 800, color: c.t1,
+                    fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                    {value}
+                  </p>
+                  <p style={{ fontSize: 10, color: c.muted, marginTop: 4, fontWeight: 600,
+                    textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1.3 }}>
+                    {label}
+                  </p>
+                </Card>
               ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* ── Row 3: Services (top) + Events (below on mobile, side by side on desktop) ── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
               {/* Active Services */}
-              <BezelCard>
-                <div className="px-5 py-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <p className={`text-[13px] font-semibold ${v.t1}`}>Serviços ativos</p>
-                    <Link href="/melo/services"
-                      className={`flex items-center gap-0.5 text-[12px] font-medium text-[#1D6EF7] hover:opacity-70`}
-                      style={{ transition: `opacity 180ms ${ease}` }}>
-                      Ver todos <CaretRight size={12} weight="bold" />
-                    </Link>
+              <Card style={{ padding: '18px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: c.t1 }}>Serviços</span>
+                  <Link href="/melo/services"
+                    style={{ display: 'flex', alignItems: 'center', gap: 3,
+                      fontSize: 12, fontWeight: 600, color: c.accent,
+                      textDecoration: 'none', opacity: 0.9 }}>
+                    Ver <CaretRight size={11} weight="bold" />
+                  </Link>
+                </div>
+
+                {(data?.activeServicesList?.length ?? 0) === 0 ? (
+                  <div style={{ padding: '16px 0', textAlign: 'center' }}>
+                    <Briefcase size={22} color={c.muted} style={{ opacity: 0.3, margin: '0 auto 6px' }} />
+                    <p style={{ fontSize: 12, color: c.muted }}>Nenhum ativo</p>
                   </div>
-                  {(data?.activeServicesList?.length ?? 0) === 0 ? (
-                    <div className="py-5 text-center">
-                      <Briefcase size={24} className={`${v.muted} mx-auto mb-2 opacity-30`} />
-                      <p className={`text-[13px] ${v.muted}`}>Nenhum serviço ativo</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {data!.activeServicesList.map(s => (
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {data!.activeServicesList.slice(0, 3).map(s => {
+                      const sc = STATUS_COLORS[s.status];
+                      return (
                         <div key={s.id}>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className={`text-[13px] font-medium ${v.t1} truncate mr-2`}>{s.name}</span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${STATUS_COLORS[s.status] ?? ''}`}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: c.t1,
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              maxWidth: '60%' }}>
+                              {s.name}
+                            </span>
+                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20,
+                              fontWeight: 700, background: sc?.bg, color: sc?.text, flexShrink: 0 }}>
                               {STATUS_LABELS[s.status]}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {/* Progress track */}
-                            <div className={`flex-1 h-1 rounded-full ${isDark ? 'bg-[#1C1C18]' : 'bg-[#F0F0EC]'}`}>
-                              <div
-                                className="h-1 rounded-full"
-                                style={{
-                                  width: `${s.progress}%`,
-                                  background: 'linear-gradient(90deg, #1D6EF7, #3B82F6)',
-                                  boxShadow: '0 0 6px rgba(29,110,247,0.4)',
-                                  transition: `width 600ms ${ease}`,
-                                }}
-                              />
-                            </div>
-                            <span className={`text-[11px] tabular-nums font-medium ${v.muted}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
-                              {s.progress}%
-                            </span>
+                          <div style={{ height: 3, borderRadius: 9999,
+                            background: isDark ? '#1C1C18' : '#F0F0EC', overflow: 'hidden' }}>
+                            <div style={{
+                              height: '100%', borderRadius: 9999,
+                              width: `${s.progress}%`,
+                              background: 'linear-gradient(90deg, #1D6EF7, #3B82F6)',
+                              transition: 'width 600ms cubic-bezier(0.16,1,0.3,1)',
+                            }} />
                           </div>
-                          <p className={`text-[11px] mt-0.5 ${v.muted}`}>{s.client}</p>
+                          <p style={{ fontSize: 10, color: c.muted, marginTop: 3 }}>{s.client}</p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </BezelCard>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
 
               {/* Upcoming Events */}
-              <BezelCard>
-                <div className="px-5 py-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <p className={`text-[13px] font-semibold ${v.t1}`}>Próximos eventos</p>
-                    <Link href="/melo/agenda"
-                      className="flex items-center gap-0.5 text-[12px] font-medium text-[#1D6EF7] hover:opacity-70"
-                      style={{ transition: `opacity 180ms ${ease}` }}>
-                      Ver todos <CaretRight size={12} weight="bold" />
-                    </Link>
-                  </div>
-                  {(data?.upcomingEvents?.length ?? 0) === 0 ? (
-                    <div className="py-5 text-center">
-                      <Clock size={24} className={`${v.muted} mx-auto mb-2 opacity-30`} />
-                      <p className={`text-[13px] ${v.muted}`}>Nenhum evento próximo</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {data!.upcomingEvents.map(e => (
-                        <div key={e.id} className="flex items-start gap-3">
-                          <div
-                            className="w-2.5 h-2.5 rounded-full mt-[5px] flex-shrink-0"
-                            style={{ background: EVENT_DOT[e.type] ?? '#6B6B64', boxShadow: `0 0 6px ${EVENT_DOT[e.type] ?? '#6B6B64'}60` }}
-                          />
-                          <div className="min-w-0">
-                            <p className={`text-[13px] font-medium ${v.t1} truncate`}>{e.title}</p>
-                            <p className={`text-[11px] ${v.muted} tabular-nums`} style={{ fontVariantNumeric: 'tabular-nums' }}>
-                              {new Date(e.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })} · {e.time}
-                              {e.client && ` · ${e.client}`}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </BezelCard>
-            </div>
-
-            {/* Recent Transactions */}
-            <BezelCard>
-              <div className="px-5 py-4">
-                <div className="flex items-center justify-between mb-4">
-                  <p className={`text-[13px] font-semibold ${v.t1}`}>Movimentações recentes</p>
-                  <Link href="/melo/finances"
-                    className="flex items-center gap-0.5 text-[12px] font-medium text-[#1D6EF7] hover:opacity-70"
-                    style={{ transition: `opacity 180ms ${ease}` }}>
-                    Ver todas <CaretRight size={12} weight="bold" />
+              <Card style={{ padding: '18px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: c.t1 }}>Agenda</span>
+                  <Link href="/melo/agenda"
+                    style={{ display: 'flex', alignItems: 'center', gap: 3,
+                      fontSize: 12, fontWeight: 600, color: c.accent,
+                      textDecoration: 'none', opacity: 0.9 }}>
+                    Ver <CaretRight size={11} weight="bold" />
                   </Link>
                 </div>
-                {(data?.recentFinances?.length ?? 0) === 0 ? (
-                  <p className={`text-center text-[13px] py-4 ${v.muted}`}>Nenhuma movimentação ainda</p>
+
+                {(data?.upcomingEvents?.length ?? 0) === 0 ? (
+                  <div style={{ padding: '16px 0', textAlign: 'center' }}>
+                    <Clock size={22} color={c.muted} style={{ opacity: 0.3, margin: '0 auto 6px' }} />
+                    <p style={{ fontSize: 12, color: c.muted }}>Sem eventos</p>
+                  </div>
                 ) : (
-                  <div className="space-y-0.5">
-                    {data!.recentFinances.map(f => (
-                      <div key={f.id} className={`flex items-center gap-3 px-2 py-2.5 rounded-xl ${v.hover} transition-colors`}>
-                        <div
-                          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-[16px]"
-                          style={{ background: f.type === 'income' ? 'rgba(22,163,74,0.1)' : 'rgba(229,72,77,0.1)' }}
-                        >
-                          {f.type === 'income' ? '↑' : '↓'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-[13px] font-medium ${v.t1} truncate`}>{f.description || f.category}</p>
-                          <p className={`text-[11px] ${v.muted}`}>
-                            {new Date(f.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
-                            {f.client && ` · ${f.client}`}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {data!.upcomingEvents.slice(0, 4).map(e => (
+                      <div key={e.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <div style={{
+                          width: 7, height: 7, borderRadius: '50%', marginTop: 4, flexShrink: 0,
+                          background: EVENT_DOT[e.type] ?? '#6B7280',
+                          boxShadow: `0 0 6px ${(EVENT_DOT[e.type] ?? '#6B7280') + '55'}`,
+                        }} />
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontSize: 12, fontWeight: 600, color: c.t1,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {e.title}
+                          </p>
+                          <p style={{ fontSize: 10, color: c.muted, fontVariantNumeric: 'tabular-nums' }}>
+                            {new Date(e.date+'T12:00:00').toLocaleDateString('pt-BR',
+                              { day: 'numeric', month: 'short' })} · {e.time}
                           </p>
                         </div>
-                        <span
-                          className={`text-[13px] font-semibold tabular-nums ${f.type === 'income' ? 'text-[#16A34A]' : 'text-[#E5484D]'}`}
-                          style={{ fontVariantNumeric: 'tabular-nums' }}
-                        >
-                          {f.type === 'income' ? '+' : '-'}{fmt(f.amount)}
-                        </span>
                       </div>
                     ))}
                   </div>
                 )}
+              </Card>
+            </div>
+
+            {/* ── Row 4: Recent transactions ── */}
+            <Card>
+              <div style={{ padding: '18px 18px 6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: c.t1 }}>Movimentações recentes</span>
+                  <Link href="/melo/finances"
+                    style={{ display: 'flex', alignItems: 'center', gap: 3,
+                      fontSize: 12, fontWeight: 600, color: c.accent,
+                      textDecoration: 'none', opacity: 0.9 }}>
+                    Ver <CaretRight size={11} weight="bold" />
+                  </Link>
+                </div>
               </div>
-            </BezelCard>
-          </>
+
+              {(data?.recentFinances?.length ?? 0) === 0 ? (
+                <p style={{ textAlign: 'center', fontSize: 13, padding: '16px 0 24px', color: c.muted }}>
+                  Nenhuma movimentação ainda
+                </p>
+              ) : (
+                <div>
+                  {data!.recentFinances.map((f, i) => (
+                    <div key={f.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '10px 18px',
+                      borderTop: i === 0 ? `1px solid ${c.border}` : 'none',
+                    }}>
+                      <div style={{
+                        width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 700,
+                        background: f.type === 'income' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.1)',
+                        color: f.type === 'income' ? '#16A34A' : '#EF4444',
+                      }}>
+                        {f.type === 'income' ? '↑' : '↓'}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: c.t1,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {f.description || f.category}
+                        </p>
+                        <p style={{ fontSize: 11, color: c.muted }}>
+                          {new Date(f.date+'T12:00:00').toLocaleDateString('pt-BR',
+                            { day: 'numeric', month: 'short' })}
+                          {f.client && ` · ${f.client}`}
+                        </p>
+                      </div>
+                      <span style={{
+                        fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                        color: f.type === 'income' ? '#16A34A' : '#EF4444', flexShrink: 0,
+                      }}>
+                        {f.type === 'income' ? '+' : '-'}{fmt(f.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+          </div>
         )}
       </div>
     </AppShell>

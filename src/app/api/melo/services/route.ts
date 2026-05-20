@@ -36,11 +36,16 @@ export async function POST(req: NextRequest) {
     deadline:     body.deadline      || '',
     progress:     parseInt(body.progress) || 0,
     currentStep:  parseInt(body.currentStep) || 0,
-    notes:        body.notes         || '',
-    createdAt:    new Date().toISOString(),
-    clientToken:  crypto.randomUUID(),
-    stages:       body.stages        || [],
-    comments:     body.comments      || [],
+    notes:          body.notes           || '',
+    createdAt:      new Date().toISOString(),
+    clientToken:    crypto.randomUUID(),
+    stages:         body.stages          || [],
+    comments:       body.comments        || [],
+    paymentType:    body.paymentType     || 'total',
+    signalValue:    body.signalValue     ? parseFloat(body.signalValue)    : undefined,
+    signalDate:     body.signalDate      || undefined,
+    remainingValue: body.remainingValue  ? parseFloat(body.remainingValue) : undefined,
+    remainingDate:  body.remainingDate   || undefined,
   };
 
   const services = await readDb<Service[]>('services', []);

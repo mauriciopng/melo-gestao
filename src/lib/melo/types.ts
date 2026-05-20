@@ -59,6 +59,12 @@ export interface Service {
   clientToken: string;
   stages: ServiceStage[];
   comments: ServiceComment[];
+  // Forma de pagamento
+  paymentType?: 'total' | 'sinal';
+  signalValue?: number;   // valor do sinal recebido
+  signalDate?: string;    // data do sinal
+  remainingValue?: number;  // valor a receber
+  remainingDate?: string;   // data prevista para receber
 }
 
 export interface Reminder {

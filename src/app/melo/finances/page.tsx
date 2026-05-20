@@ -50,13 +50,28 @@ const CATEGORY_PARSE: [RegExp, string][] = [
   [/\bmarcelo\b|\bpessoal\b/i,                              'MARCELO'],
 ];
 
-function parseExpense(text: string): { amount: number; category: string } | null {
+interface CustomCategory { id: string; name: string; label: string; color: string; }
+
+const PRESET_COLORS = [
+  '#1D6EF7','#32D74B','#FF453A','#FF9F0A','#BF5AF2','#64D2FF',
+  '#FFD60A','#FF375F','#10B981','#F97316','#8B5CF6','#EC4899',
+  '#14B8A6','#6366F1','#84CC16','#A78BFA',
+];
+
+function parseExpense(text: string, customCats: CustomCategory[] = []): { amount: number; category: string } | null {
   const numMatch = text.match(/r?\$?\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
   if (!numMatch) return null;
   const amount = parseFloat(numMatch[1].replace(/\./g, '').replace(',', '.'));
   if (isNaN(amount) || amount <= 0) return null;
   for (const [re, cat] of CATEGORY_PARSE) {
     if (re.test(text)) return { amount, category: cat };
+  }
+  // Verifica categorias personalizadas
+  for (const cc of customCats) {
+    if (text.toLowerCase().includes(cc.label.toLowerCase()) ||
+        text.toLowerCase().includes(cc.name.toLowerCase())) {
+      return { amount, category: cc.name };
+    }
   }
   return null;
 }
@@ -123,6 +138,13 @@ export default function FinancesPage() {
   const [chatSending, setChatSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  /* Custom categories */
+  const [customCats,   setCustomCats]   = useState<CustomCategory[]>([]);
+  const [showNewCat,   setShowNewCat]   = useState(false);
+  const [newCatLabel,  setNewCatLabel]  = useState('');
+  const [newCatColor,  setNewCatColor]  = useState('#10B981');
+  const [savingNewCat, setSavingNewCat] = useState(false);
+
   const load = useCallback(() => {
     setLoading(true);
     fetch(`/api/melo/finances?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${tk()}` } })
@@ -132,18 +154,54 @@ export default function FinancesPage() {
   useEffect(() => { load(); }, [load]);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatMsgs]);
 
+  useEffect(() => {
+    fetch('/api/melo/categories', { headers: { Authorization: `Bearer ${tk()}` } })
+      .then(r => r.json()).then(d => setCustomCats(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
+
   /* ── Totals ── */
   const totalIncome  = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
   const totalExpense = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
 
+  /* Merge built-in + custom categories */
+  const allChatCats: Record<string, { label: string; color: string }> = {
+    ...CHAT_CATS,
+    ...Object.fromEntries(customCats.map(cc => [cc.name, { label: cc.label, color: cc.color }])),
+  };
+
   /* Chat entries + category totals */
-  const chatEntries = entries.filter(e => Object.keys(CHAT_CATS).includes(e.category));
-  const catTotals   = Object.entries(CHAT_CATS).map(([cat, cfg]) => ({
+  const chatEntries = entries.filter(e => Object.keys(allChatCats).includes(e.category));
+  const catTotals   = Object.entries(allChatCats).map(([cat, cfg]) => ({
     cat, cfg,
     total: chatEntries.filter(e => e.category === cat).reduce((s, e) => s + e.amount, 0),
   })).filter(r => r.total > 0).sort((a, b) => b.total - a.total);
 
   const totalChatExpense = catTotals.reduce((s, r) => s + r.total, 0);
+
+  /* ── Create custom category ── */
+  async function createCategory(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newCatLabel.trim()) return;
+    setSavingNewCat(true);
+    const res = await fetch('/api/melo/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
+      body: JSON.stringify({ label: newCatLabel.trim(), color: newCatColor }),
+    });
+    if (res.ok) {
+      const cat = await res.json();
+      setCustomCats(prev => [...prev, cat]);
+      setNewCatLabel('');
+      setShowNewCat(false);
+    }
+    setSavingNewCat(false);
+  }
+
+  async function deleteCustomCategory(id: string) {
+    if (!confirm('Remover esta categoria?')) return;
+    await fetch(`/api/melo/categories?id=${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${tk()}` } });
+    setCustomCats(prev => prev.filter(c => c.id !== id));
+  }
 
   /* ── Delete ── */
   async function del(id: string) {
@@ -194,16 +252,18 @@ export default function FinancesPage() {
     setChatInput('');
     setChatSending(true);
 
-    const parsed = parseExpense(text);
+    const parsed = parseExpense(text, customCats);
     if (!parsed) {
-      setChatMsgs(m => [...m, { id: Date.now() + 'e', role: 'system', text: 'Não entendi. Tente: 150 combustivel ou 85,50 alimentacao', error: true }]);
+      const names = Object.values(allChatCats).map(c => c.label).join(', ');
+      setChatMsgs(m => [...m, { id: Date.now() + 'e', role: 'system',
+        text: `Não entendi. Tente: 150 combustivel\nCategorias: ${names}`, error: true }]);
       setChatSending(false);
       return;
     }
 
     const entry: ChatMsg = {
       id: Date.now() + 'p', role: 'system',
-      text: `${fmt(parsed.amount)} → ${CHAT_CATS[parsed.category]?.label || parsed.category}`,
+      text: `${fmt(parsed.amount)} → ${allChatCats[parsed.category]?.label || parsed.category}`,
       parsed,
     };
     setChatMsgs(m => [...m, entry]);
@@ -316,7 +376,7 @@ export default function FinancesPage() {
               </div>
             ) : (
               entries.map((e, i) => {
-                const catCfg = CHAT_CATS[e.category];
+                const catCfg = allChatCats[e.category];
                 return (
                   <div key={e.id} className="flex items-center gap-3 px-4 py-3.5"
                     style={{ borderTop: i !== 0 ? `1px solid ${c.border}` : 'none' }}>
@@ -448,7 +508,7 @@ export default function FinancesPage() {
                   Lançamentos via Chat
                 </p>
                 {chatEntries.slice().reverse().slice(0, 20).map((e, i, arr) => {
-                  const cfg = CHAT_CATS[e.category];
+                  const cfg = allChatCats[e.category];
                   return (
                     <div key={e.id} className="flex items-center gap-3 px-4 py-3"
                       style={{ borderTop: i !== 0 ? `1px solid ${c.border}` : 'none' }}>
@@ -478,6 +538,94 @@ export default function FinancesPage() {
               </div>
             )}
 
+            {/* ── Category chips ── */}
+            <div className="rounded-2xl overflow-hidden" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+              <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: c.muted }}>Categorias</p>
+                <button onClick={() => { setShowNewCat(v => !v); setNewCatLabel(''); }}
+                  className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg active:scale-95 transition-all"
+                  style={{ background: showNewCat ? '#1D6EF7' : c.accentMuted, color: showNewCat ? '#fff' : '#1D6EF7' }}>
+                  <Plus size={11} /> Nova
+                </button>
+              </div>
+
+              {/* Chips row */}
+              <div className="px-3 pb-3" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <div style={{ display: 'flex', gap: 6, width: 'max-content' }}>
+                  {Object.entries(allChatCats).map(([key, cfg]) => {
+                    const customEntry = customCats.find(cc => cc.name === key);
+                    return (
+                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4,
+                        padding: '5px 10px', borderRadius: 20,
+                        background: cfg.color + '18', border: `1px solid ${cfg.color}44`,
+                        cursor: 'pointer', flexShrink: 0,
+                      }}
+                        onClick={() => setChatInput(`0 ${cfg.label.toLowerCase()}`)}>
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: cfg.color, flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, fontWeight: 600, color: cfg.color }}>{cfg.label}</span>
+                        {customEntry && (
+                          <button onClick={e => { e.stopPropagation(); deleteCustomCategory(customEntry.id); }}
+                            style={{ marginLeft: 2, color: cfg.color, opacity: 0.6, background: 'none', border: 'none',
+                              cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: 0 }}>
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* New category form */}
+              {showNewCat && (
+                <form onSubmit={createCategory}
+                  style={{ borderTop: `1px solid ${c.border}`, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.12em', color: c.muted, marginBottom: 6 }}>Nome da categoria</label>
+                    <input autoFocus value={newCatLabel} onChange={e => setNewCatLabel(e.target.value)}
+                      placeholder="Ex: Ferramentas, Aluguel, Marketing..."
+                      required maxLength={24}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 10, fontSize: 13,
+                        background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                        border: `1px solid ${c.border}`, color: c.t1, outline: 'none',
+                        fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.12em', color: c.muted, marginBottom: 8 }}>Cor</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {PRESET_COLORS.map(color => (
+                        <button key={color} type="button" onClick={() => setNewCatColor(color)}
+                          style={{ width: 28, height: 28, borderRadius: '50%', background: color, border: 'none',
+                            cursor: 'pointer', position: 'relative', flexShrink: 0,
+                            boxShadow: newCatColor === color ? `0 0 0 3px ${isDark?'#1C1C18':'#F0F0EC'}, 0 0 0 5px ${color}` : 'none',
+                            transform: newCatColor === color ? 'scale(1.15)' : 'scale(1)',
+                            transition: 'all 0.15s ease',
+                          }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" onClick={() => setShowNewCat(false)}
+                      style={{ flex: 1, padding: '9px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                        background: isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)',
+                        border: `1px solid ${c.border}`, color: c.muted, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Cancelar
+                    </button>
+                    <button type="submit" disabled={savingNewCat || !newCatLabel.trim()}
+                      style={{ flex: 2, padding: '9px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+                        background: `linear-gradient(135deg, ${newCatColor}, ${newCatColor}cc)`,
+                        border: 'none', color: '#fff', cursor: 'pointer',
+                        opacity: savingNewCat || !newCatLabel.trim() ? 0.5 : 1,
+                        fontFamily: 'inherit' }}>
+                      {savingNewCat ? 'Criando...' : `Criar "${newCatLabel || 'categoria'}"`}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+
             {/* Chat messages */}
             <div className="rounded-2xl overflow-hidden flex flex-col" style={{ background: c.card, border: `1px solid ${c.border}`, minHeight: 200 }}>
               <div className="flex-1 p-4 space-y-3 overflow-y-auto" style={{ maxHeight: 280 }}>
@@ -492,8 +640,8 @@ export default function FinancesPage() {
                       <p style={{ whiteSpace:'pre-line' }}>{msg.text}</p>
                       {msg.parsed && (
                         <div className="flex items-center gap-1.5 mt-1.5">
-                          <div className="w-3 h-3 rounded-full" style={{ background: CHAT_CATS[msg.parsed.category]?.color||'#888' }} />
-                          <span className="text-[11px] font-semibold opacity-80">{CHAT_CATS[msg.parsed.category]?.label||msg.parsed.category}</span>
+                          <div className="w-3 h-3 rounded-full" style={{ background: allChatCats[msg.parsed.category]?.color||'#888' }} />
+                          <span className="text-[11px] font-semibold opacity-80">{allChatCats[msg.parsed.category]?.label||msg.parsed.category}</span>
                           {msg.saved && <Check size={11} className="text-[#32D74B] ml-1" />}
                         </div>
                       )}
@@ -517,7 +665,7 @@ export default function FinancesPage() {
                   </button>
                 </div>
                 <p className="text-[10px] mt-1.5 text-center" style={{ color: c.muted }}>
-                  Material · Alimentação · Fixas · Combustível · Pedágio · Funcionários · Contas · Marcelo
+                  Digite: valor + nome da categoria · Ex: 150 combustivel
                 </p>
               </div>
             </div>

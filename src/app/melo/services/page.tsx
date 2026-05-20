@@ -42,6 +42,9 @@ const EMPTY_SVC = {
   name: '', client: '', clientPhone: '', clientEmail: '', address: '',
   type: 'construction', status: 'proposal',
   value: '', startDate: new Date().toISOString().split('T')[0], deadline: '', notes: '',
+  paymentType: 'total' as 'total' | 'sinal',
+  signalValue: '', signalDate: '',
+  remainingValue: '', remainingDate: '',
 };
 
 /* ── Detail view ── */
@@ -185,11 +188,44 @@ function ServiceDetail({
             {service.clientPhone && <p className="text-[12px]" style={{ color: c.muted }}>{service.clientPhone}</p>}
             {service.address && <p className="text-[12px]" style={{ color: c.muted }}>{service.address}</p>}
           </div>
-          <div>
+          <div style={{ textAlign: 'right' }}>
             <p className="font-bold text-[16px]" style={{ color: c.t1 }}>{fmt(service.value)}</p>
             <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${STATUS_COLORS[service.status] || ''}`}>
               {STATUS_LABELS[service.status]}
             </span>
+            {/* Payment breakdown */}
+            {service.paymentType === 'sinal' && (
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                {service.signalValue != null && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 700,
+                      background: 'rgba(22,163,74,0.15)', color: '#16A34A' }}>
+                      Sinal
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#16A34A' }}>{fmt(service.signalValue)}</span>
+                    {service.signalDate && (
+                      <span style={{ fontSize: 10, color: c.muted }}>
+                        {new Date(service.signalDate + 'T12:00:00').toLocaleDateString('pt-BR')}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {service.remainingValue != null && service.remainingValue > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 700,
+                      background: 'rgba(29,110,247,0.12)', color: '#1D6EF7' }}>
+                      A Receber
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#1D6EF7' }}>{fmt(service.remainingValue)}</span>
+                    {service.remainingDate && (
+                      <span style={{ fontSize: 10, color: c.muted }}>
+                        {new Date(service.remainingDate + 'T12:00:00').toLocaleDateString('pt-BR')}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
         {/* Progress bar */}
@@ -421,6 +457,11 @@ export default function ServicesPage() {
       clientEmail: s.clientEmail || '', address: s.address || '',
       type: s.type, status: s.status, value: String(s.value),
       startDate: s.startDate, deadline: s.deadline, notes: s.notes,
+      paymentType:    (s.paymentType    || 'total') as 'total' | 'sinal',
+      signalValue:    s.signalValue    != null ? String(s.signalValue)    : '',
+      signalDate:     s.signalDate     || '',
+      remainingValue: s.remainingValue != null ? String(s.remainingValue) : '',
+      remainingDate:  s.remainingDate  || '',
     });
     setModal(true);
   }
@@ -429,7 +470,14 @@ export default function ServicesPage() {
     e.preventDefault();
     if (!form.name) return;
     setSaving(true);
-    const body = { ...form, value: parseFloat(form.value) || 0 };
+    const body = {
+      ...form,
+      value:          parseFloat(form.value)          || 0,
+      signalValue:    form.paymentType === 'sinal' && form.signalValue    ? parseFloat(form.signalValue)    : undefined,
+      remainingValue: form.paymentType === 'sinal' && form.remainingValue ? parseFloat(form.remainingValue) : undefined,
+      signalDate:     form.paymentType === 'sinal' ? form.signalDate    : undefined,
+      remainingDate:  form.paymentType === 'sinal' ? form.remainingDate : undefined,
+    };
     if (editId) {
       await fetch('/api/melo/services', {
         method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
@@ -573,6 +621,22 @@ export default function ServicesPage() {
                   <div className="flex items-center justify-between pt-2" style={{ borderTop: `1px solid ${c.border}` }}>
                     <div className="text-xs" style={{ color: c.muted }}>
                       {s.deadline && `Prazo: ${new Date(s.deadline + 'T12:00:00').toLocaleDateString('pt-BR')}`}
+                      {s.paymentType === 'sinal' && (
+                        <span style={{ marginLeft: s.deadline ? 6 : 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {s.deadline && '· '}
+                          <span style={{ padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 700,
+                            background: s.signalDate ? 'rgba(22,163,74,0.12)' : 'rgba(29,110,247,0.1)',
+                            color: s.signalDate ? '#16A34A' : '#1D6EF7' }}>
+                            {s.signalValue ? `Sinal ${fmt(s.signalValue)}` : 'Sinal'}
+                          </span>
+                          {s.remainingValue != null && s.remainingValue > 0 && (
+                            <span style={{ padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 700,
+                              background: 'rgba(29,110,247,0.1)', color: '#1D6EF7' }}>
+                              + {fmt(s.remainingValue)}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => openEdit(s)}
@@ -669,6 +733,86 @@ export default function ServicesPage() {
                     placeholder="Detalhes adicionais..."
                     className={`${inputCls} resize-none`} style={{ background:c.ib, border:`1px solid ${c.ibr}`, color:c.it, width:'100%', boxSizing:'border-box', minWidth:0 }} />
                 </div>
+
+                {/* ── Forma de Pagamento ── */}
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: c.muted }}>
+                    Forma de Pagamento
+                  </label>
+                  <div className="flex rounded-xl overflow-hidden" style={{ border: `1px solid ${c.ibr}` }}>
+                    {(['total', 'sinal'] as const).map(pt => (
+                      <button key={pt} type="button"
+                        onClick={() => setForm(f => ({ ...f, paymentType: pt }))}
+                        className="flex-1 py-2.5 text-[13px] font-semibold transition-all"
+                        style={{
+                          background: form.paymentType === pt ? 'linear-gradient(135deg,#1D6EF7,#1249C2)' : c.ib,
+                          color: form.paymentType === pt ? '#fff' : c.muted,
+                        }}>
+                        {pt === 'total' ? 'Total' : 'Sinal'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Campos de sinal — só aparecem quando paymentType === 'sinal' */}
+                {form.paymentType === 'sinal' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+                    {/* Sinal recebido */}
+                    <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${c.ibr}` }}>
+                      <div style={{ padding: '8px 12px 6px',
+                        background: isDark ? 'rgba(22,163,74,0.12)' : 'rgba(22,163,74,0.08)',
+                        borderBottom: `1px solid ${c.ibr}` }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
+                          letterSpacing: '0.14em', color: '#16A34A' }}>
+                          Sinal recebido
+                        </span>
+                      </div>
+                      <div style={{ padding: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div>
+                          <label className="block text-[11px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: c.muted }}>Valor (R$)</label>
+                          <input type="number" step="0.01" min="0" placeholder="0,00"
+                            value={form.signalValue}
+                            onChange={e => setForm(f => ({ ...f, signalValue: e.target.value }))}
+                            className={inputCls} style={{ background:c.ib, border:`1px solid ${c.ibr}`, color:c.it, width:'100%', boxSizing:'border-box', minWidth:0 }} />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: c.muted }}>Data</label>
+                          <input type="date" value={form.signalDate}
+                            onChange={e => setForm(f => ({ ...f, signalDate: e.target.value }))}
+                            className={inputCls} style={{ background:c.ib, border:`1px solid ${c.ibr}`, color:c.it, width:'100%', boxSizing:'border-box', minWidth:0 }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Valor a receber */}
+                    <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${c.ibr}` }}>
+                      <div style={{ padding: '8px 12px 6px',
+                        background: isDark ? 'rgba(29,110,247,0.12)' : 'rgba(29,110,247,0.08)',
+                        borderBottom: `1px solid ${c.ibr}` }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
+                          letterSpacing: '0.14em', color: '#1D6EF7' }}>
+                          A Receber
+                        </span>
+                      </div>
+                      <div style={{ padding: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div>
+                          <label className="block text-[11px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: c.muted }}>Valor (R$)</label>
+                          <input type="number" step="0.01" min="0" placeholder="0,00"
+                            value={form.remainingValue}
+                            onChange={e => setForm(f => ({ ...f, remainingValue: e.target.value }))}
+                            className={inputCls} style={{ background:c.ib, border:`1px solid ${c.ibr}`, color:c.it, width:'100%', boxSizing:'border-box', minWidth:0 }} />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: c.muted }}>Data Prevista</label>
+                          <input type="date" value={form.remainingDate}
+                            onChange={e => setForm(f => ({ ...f, remainingDate: e.target.value }))}
+                            className={inputCls} style={{ background:c.ib, border:`1px solid ${c.ibr}`, color:c.it, width:'100%', boxSizing:'border-box', minWidth:0 }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div style={{ paddingTop:8, paddingBottom:'calc(5rem + env(safe-area-inset-bottom))' }}>
                   <button type="submit" disabled={saving}

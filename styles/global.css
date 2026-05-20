@@ -71,10 +71,21 @@
   }
 }
 
-body {
+html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  overflow-x: hidden !important;
+  max-width: 100vw;
+}
+
+/* Remove scrollbars on mobile */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* Garante que nenhum elemento ultrapasse a largura da tela */
+@media (max-width: 767px) {
+  * { max-width: 100vw; box-sizing: border-box; }
 }
 
 @theme inline {
