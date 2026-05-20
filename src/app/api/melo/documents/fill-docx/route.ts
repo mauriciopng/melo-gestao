@@ -39,41 +39,53 @@ function escapeXml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-/** Injeta texto no primeiro parágrafo vazio de uma célula */
-function fillCell(cellXml: string, value: string, sz = '20'): string {
-  if (!value.trim()) return cellXml;
-  const v = escapeXml(value);
-  // Inject run right before </w:p></w:tc>
-  return cellXml.replace(
-    /(<\/w:pPr>)(<\/w:p><\/w:tc>)/,
-    `$1<w:r><w:rPr><w:sz w:val="${sz}"/></w:rPr><w:t xml:space="preserve">${v}</w:t></w:r>$2`
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * MANTÉM o label e ADICIONA o valor abaixo (com quebra de linha).
+ * Não substitui o texto original.
+ */
+function appendBelowLabel(xml: string, labelText: string, value: string): string {
+  if (!value || !value.trim()) return xml;
+  const v = escapeXml(value.trim());
+  // Procura o run contendo o label e adiciona um novo run com <w:br/> + valor
+  const pattern = new RegExp(`(<w:t[^>]*>${escapeRegex(labelText)}</w:t></w:r>)`);
+  return xml.replace(
+    pattern,
+    `$1<w:r><w:rPr><w:sz w:val="22"/></w:rPr><w:br/><w:t xml:space="preserve">${v}</w:t></w:r>`
   );
 }
 
-/** Cria XML de uma linha de item preenchida a partir da estrutura original */
-function buildItemRow(emptyRowXml: string, item: Item, idx: number): string {
-  // Extract all cells
-  const cellMatches = [...emptyRowXml.matchAll(/<w:tc>[\s\S]*?<\/w:tc>/g)];
-  if (cellMatches.length < 7) return emptyRowXml;
+/** Preenche uma linha de item, injetando texto em cada célula vazia */
+function fillItemRow(emptyRowXml: string, item: Item, seed: number): string {
+  const values = [
+    item.qtde || '', item.descricao || '', item.alt || '',
+    item.larg || '', item.m2 || '', item.valorUnit || '', item.subtotal || '',
+  ];
+  let cellIdx = 0;
 
-  const values = [item.qtde, item.descricao, item.alt, item.larg, item.m2, item.valorUnit, item.subtotal];
-  let result = emptyRowXml;
+  // Injeta texto antes de </w:p></w:tc> em cada célula vazia, na ordem
+  let result = emptyRowXml.replace(
+    /(<\/w:pPr>)(<\/w:p><\/w:tc>)/g,
+    (match, p1, p2) => {
+      const val = values[cellIdx++];
+      if (val && val.trim()) {
+        return `${p1}<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(val.trim())}</w:t></w:r>${p2}`;
+      }
+      return match;
+    }
+  );
 
-  // Replace unique paraId to avoid conflicts
-  result = result.replace(/w14:paraId="[A-F0-9]+"/g, (_, pos) => {
-    const hex = (Math.floor(Math.random() * 0xFFFFFF) + idx * 100).toString(16).toUpperCase().padStart(8, '0');
+  // Gera paraIds únicos para evitar conflitos no Word
+  let counter = 0;
+  result = result.replace(/w14:paraId="[A-F0-9]+"/g, () => {
+    counter++;
+    const hex = ((seed * 7919 + counter * 31) >>> 0).toString(16).toUpperCase().padStart(8, '0').slice(0, 8);
     return `w14:paraId="${hex}"`;
   });
 
-  // Fill each cell in reverse order to preserve offsets
-  for (let i = cellMatches.length - 1; i >= 0; i--) {
-    const original = cellMatches[i][0];
-    const filled   = values[i] ? fillCell(original, values[i]) : original;
-    const pos = result.lastIndexOf(original);
-    if (pos !== -1 && filled !== original) {
-      result = result.slice(0, pos) + filled + result.slice(pos + original.length);
-    }
-  }
   return result;
 }
 
@@ -91,88 +103,72 @@ export async function POST(req: NextRequest) {
   const zip = new AdmZip(templatePath);
   let xml  = zip.readAsText('word/document.xml');
 
-  // ── Replace header label fields ──
-  const replacements: [string, string][] = [
-    ['<w:t>Nome/RazãoSocial -</w:t>',   `<w:t>${escapeXml(data.clienteNome     || '')}</w:t>`],
-    ['<w:t>Cpf/CnpJ</w:t>',             `<w:t>${escapeXml(data.clienteCpfCnpj  || '')}</w:t>`],
-    ['<w:t>IE</w:t>',                   `<w:t>${escapeXml(data.clienteIE        || 'IE')}</w:t>`],
-    ['<w:t>Data</w:t>',                 `<w:t>${escapeXml(data.clienteData      || '')}</w:t>`],
-    ['<w:t>OS</w:t>',                   `<w:t>${escapeXml(data.clienteOS        || '')}</w:t>`],
-    ['<w:t>Endereço</w:t>',             `<w:t>${escapeXml(data.clienteEndereco  || '')}</w:t>`],
-    ['<w:t>Bairro</w:t>',               `<w:t>${escapeXml(data.clienteBairro    || '')}</w:t>`],
-    ['<w:t>Cep</w:t>',                  `<w:t>${escapeXml(data.clienteCep       || '')}</w:t>`],
-    ['<w:t>Contato</w:t>',              `<w:t>${escapeXml(data.clienteContato   || '')}</w:t>`],
-    ['<w:t>Telefone/Celular</w:t>',     `<w:t>${escapeXml(data.clienteTelefone  || '')}</w:t>`],
-    ['<w:t>E-mail</w:t>',               `<w:t>${escapeXml(data.clienteEmail     || '')}</w:t>`],
-  ];
-  for (const [from, to] of replacements) {
-    xml = xml.replace(from, to);
-  }
+  // ── APPEND valores ABAIXO dos labels (mantém o label) ──
+  xml = appendBelowLabel(xml, 'Nome/RazãoSocial -',   data.clienteNome     || '');
+  xml = appendBelowLabel(xml, 'Cpf/CnpJ',             data.clienteCpfCnpj  || '');
+  xml = appendBelowLabel(xml, 'IE',                   data.clienteIE       || '');
+  xml = appendBelowLabel(xml, 'Data',                 data.clienteData     || '');
+  xml = appendBelowLabel(xml, 'OS',                   data.clienteOS       || '');
+  xml = appendBelowLabel(xml, 'Endereço',             data.clienteEndereco || '');
+  xml = appendBelowLabel(xml, 'Bairro',               data.clienteBairro   || '');
+  xml = appendBelowLabel(xml, 'Cep',                  data.clienteCep      || '');
+  xml = appendBelowLabel(xml, 'Contato',              data.clienteContato  || '');
+  xml = appendBelowLabel(xml, 'Telefone/Celular',     data.clienteTelefone || '');
+  xml = appendBelowLabel(xml, 'E-mail',               data.clienteEmail    || '');
+  xml = appendBelowLabel(xml, 'FormasdePagamento:',   data.formasPagamento || '');
 
-  // ── Replace TOTAL ──
-  if (data.total) {
-    const totalVal = data.total.trim().startsWith('R$') ? data.total.trim() : `R$ ${data.total.trim()}`;
+  // ── TOTAL: substitui os espaços em branco pelo valor ──
+  if (data.total && data.total.trim()) {
+    const t = data.total.trim().replace(/^R\$\s*/i, '');
     xml = xml.replace(
-      /(<w:t[^>]*>\s*TOTAL:R\$\s*)(\s+)(<\/w:t>)/,
-      `$1 ${escapeXml(totalVal)} $3`
+      /(TOTAL:R\$)\s+(<\/w:t>)/,
+      `$1${escapeXml(t)}$2`
     );
   }
 
-  // ── Fill formas de pagamento ──
-  // The field label "FormasdePagamento:" has a run right after it — inject into the NEXT empty cell
-  if (data.formasPagamento) {
-    // Find the run right after the FormasdePagamento text and the blank space after
-    xml = xml.replace(
-      /(<w:t>FormasdePagamento:<\/w:t><\/w:r>)([\s\S]*?)(<\/w:p>)/,
-      (match, prefix, middle, suffix) => {
-        if (middle.includes('<w:t>')) return match; // already has content
-        return `${prefix}${middle}<w:r><w:t xml:space="preserve"> ${escapeXml(data.formasPagamento!)}</w:t></w:r>${suffix}`;
-      }
-    );
-  }
-
-  // ── Fill item rows ──
+  // ── Preenche linhas da tabela de itens ──
   if (data.itens && data.itens.length > 0) {
-    // Find the section between Subtotal header and TOTAL row
-    const headerRowEnd = xml.indexOf('</w:tr>', xml.indexOf('<w:t>Subtotal</w:t>')) + 7;
-    const totalRowStart = xml.indexOf('<w:t xml:space="preserve">', xml.indexOf('TOTAL:R$') - 200);
-    // Go back to find the start of the row that contains TOTAL
-    const totalTrStart = xml.lastIndexOf('<w:tr ', totalRowStart);
+    const subtotalIdx = xml.indexOf('<w:t>Subtotal</w:t>');
+    if (subtotalIdx !== -1) {
+      const headerRowEnd = xml.indexOf('</w:tr>', subtotalIdx) + 7;
+      const totalIdx     = xml.indexOf('TOTAL:R$');
+      const totalTrStart = xml.lastIndexOf('<w:tr ', totalIdx);
 
-    const itemsSection = xml.substring(headerRowEnd, totalTrStart);
+      if (headerRowEnd > 0 && totalTrStart > headerRowEnd) {
+        const itemsSection = xml.substring(headerRowEnd, totalTrStart);
+        const rowRegex = /<w:tr\b[\s\S]*?<\/w:tr>/g;
+        const emptyRows = [...itemsSection.matchAll(rowRegex)];
 
-    // Get all individual rows in this section
-    const rowRegex = /<w:tr[\s\S]*?<\/w:tr>/g;
-    const emptyRows: RegExpMatchArray[] = [...itemsSection.matchAll(rowRegex)];
+        if (emptyRows.length > 0) {
+          const emptyRowTemplate = emptyRows[0][0];
+          const filledRows: string[] = [];
+          const seed = Date.now() & 0xFFFFFF;
 
-    if (emptyRows.length > 0) {
-      const emptyRowTemplate = emptyRows[0][0]; // Use first row as template
-      let newItemsSection = itemsSection;
-      const filledRows: string[] = [];
+          for (let i = 0; i < data.itens.length && i < emptyRows.length; i++) {
+            filledRows.push(fillItemRow(emptyRowTemplate, data.itens[i], seed + i));
+          }
 
-      // Build filled rows
-      for (let i = 0; i < data.itens.length && i < emptyRows.length; i++) {
-        filledRows.push(buildItemRow(emptyRowTemplate, data.itens[i], i + 1));
-      }
+          // Substitui as primeiras N linhas vazias pelas preenchidas (resto fica vazio)
+          let replaced = 0;
+          const newItemsSection = itemsSection.replace(rowRegex, (match) => {
+            if (replaced < filledRows.length) {
+              return filledRows[replaced++];
+            }
+            return match;
+          });
 
-      // Replace empty rows: first N with filled, rest stay empty
-      let replaced = 0;
-      newItemsSection = itemsSection.replace(rowRegex, (match) => {
-        if (replaced < filledRows.length) {
-          return filledRows[replaced++];
+          xml = xml.substring(0, headerRowEnd) + newItemsSection + xml.substring(totalTrStart);
         }
-        return match;
-      });
-
-      xml = xml.substring(0, headerRowEnd) + newItemsSection + xml.substring(totalTrStart);
+      }
     }
   }
 
-  // ── Update zip and return ──
+  // ── Atualiza o ZIP e retorna ──
   zip.updateFile('word/document.xml', Buffer.from(xml, 'utf-8'));
 
-  const buffer = zip.toBuffer();
-  const filename = `Orcamento_${(data.clienteNome || 'Cliente').replace(/\s+/g, '_')}_${data.clienteOS || new Date().getTime()}.docx`;
+  const buffer   = zip.toBuffer();
+  const safeName = (data.clienteNome || 'Cliente').replace(/[^a-zA-Z0-9_À-ſ]/g, '_').slice(0, 40);
+  const filename = `Orcamento_${safeName}_${data.clienteOS || Date.now()}.docx`;
 
   return new NextResponse(buffer, {
     headers: {

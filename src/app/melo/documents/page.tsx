@@ -83,9 +83,12 @@ interface AlfaGlassData {
   itens: AlfaGlassItem[]; formasPagamento: string; total: string; observacoes: string;
 }
 function parseAlfaGlass(text: string): AlfaGlassData {
+  // Normaliza quebras de linha — iOS pode usar \r\n
+  const normText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const field = (keys: string[]) => {
     for (const k of keys) {
-      const m = text.match(new RegExp(`${k}\\s*:?\\s*([^\\n]+)`, 'i'));
+      // Para por: newline, vírgula seguida de outra label, ou |
+      const m = normText.match(new RegExp(`(?:^|\\n)\\s*${k}\\s*:?\\s*([^\\n]+)`, 'i'));
       if (m) return m[1].trim();
     }
     return '';
