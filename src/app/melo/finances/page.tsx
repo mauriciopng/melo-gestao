@@ -555,22 +555,24 @@ export default function FinancesPage() {
                   {Object.entries(allChatCats).map(([key, cfg]) => {
                     const customEntry = customCats.find(cc => cc.name === key);
                     return (
-                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4,
-                        padding: '5px 10px', borderRadius: 20,
-                        background: cfg.color + '18', border: `1px solid ${cfg.color}44`,
-                        cursor: 'pointer', flexShrink: 0,
-                      }}
-                        onClick={() => setChatInput(`0 ${cfg.label.toLowerCase()}`)}>
+                      <button key={key} type="button"
+                        onClick={() => setChatInput(`0 ${cfg.label.toLowerCase()}`)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4,
+                          padding: '5px 10px', borderRadius: 20,
+                          background: cfg.color + '18', border: `1px solid ${cfg.color}44`,
+                          cursor: 'pointer', flexShrink: 0,
+                          fontFamily: 'inherit',
+                        }}>
                         <div style={{ width: 7, height: 7, borderRadius: '50%', background: cfg.color, flexShrink: 0 }} />
                         <span style={{ fontSize: 11, fontWeight: 600, color: cfg.color }}>{cfg.label}</span>
                         {customEntry && (
-                          <button onClick={e => { e.stopPropagation(); deleteCustomCategory(customEntry.id); }}
-                            style={{ marginLeft: 2, color: cfg.color, opacity: 0.6, background: 'none', border: 'none',
-                              cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: 0 }}>
+                          <span onClick={e => { e.stopPropagation(); deleteCustomCategory(customEntry.id); }}
+                            style={{ marginLeft: 2, color: cfg.color, opacity: 0.6,
+                              cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>
                             ×
-                          </button>
+                          </span>
                         )}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
