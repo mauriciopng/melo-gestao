@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   SquaresFour, CurrencyDollar, Calendar, Briefcase,
   ChartLineUp, Question, MagnifyingGlass, Bell,
-  SignOut, Sun, Moon, X, CaretRight,
+  SignOut, Sun, Moon, X, CaretRight, FolderOpen,
 } from '@phosphor-icons/react';
 import { useTheme } from '@/lib/melo/theme';
 import { MeloIcon } from '@/components/melo/MeloLogo';
@@ -16,6 +16,7 @@ const NAV = [
   { href: '/melo/finances',   icon: CurrencyDollar, label: 'Finanças' },
   { href: '/melo/agenda',     icon: Calendar,       label: 'Agenda' },
   { href: '/melo/services',   icon: Briefcase,      label: 'Serviços' },
+  { href: '/melo/documents',  icon: FolderOpen,     label: 'Documentos' },
   { href: '/melo/reminders',  icon: Bell,           label: 'Alarmes' },
   { href: '/melo/statistics', icon: ChartLineUp,    label: 'Estatísticas' },
   { href: '/melo/help',       icon: Question,       label: 'Ajuda' },
