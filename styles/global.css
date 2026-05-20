@@ -88,6 +88,17 @@ html, body {
   * { max-width: 100vw; box-sizing: border-box; }
 }
 
+/* Elimina delay de 300ms e comportamento de duplo toque no iOS/Safari */
+a, button, [role="button"], input, select, textarea, label {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Previne qualquer delay de toque em toda a página */
+html {
+  touch-action: manipulation;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

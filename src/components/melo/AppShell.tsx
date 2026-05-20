@@ -306,6 +306,8 @@ function ShellInner({ children }: { children: React.ReactNode }) {
               textDecoration: 'none',
               background: active ? c.accentMuted : 'transparent',
               transition: `all 200ms ${ease}`,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
             }}>
               <Icon size={20} weight={active ? 'fill' : 'regular'}
                 color={active ? c.accent : (isDark ? '#6C6C64' : '#9C9C94')} />
