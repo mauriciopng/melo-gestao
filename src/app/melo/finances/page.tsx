@@ -161,9 +161,10 @@ export default function FinancesPage() {
       .then(r => r.json()).then(d => setCustomCats(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
 
-  /* ── Totals ── */
-  const totalIncome  = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+  /* ── Totals — receitas SEM pendentes, pendentes separado ── */
+  const totalIncome  = entries.filter(e => e.type === 'income' && !e.isPending).reduce((s, e) => s + e.amount, 0);
   const totalExpense = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+  const totalPending = entries.filter(e => e.isPending === true).reduce((s, e) => s + e.amount, 0);
 
   /* Merge built-in + custom categories */
   const allChatCats: Record<string, { label: string; color: string }> = {
@@ -333,22 +334,39 @@ export default function FinancesPage() {
           </button>
         </div>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* Summary cards — grid 2x2 */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Receitas confirmadas */}
           <div className="rounded-2xl p-4 text-white"
             style={{ background: 'linear-gradient(135deg,#16A34A,#15803D)', boxShadow: '0 4px 16px rgba(22,163,74,0.3)' }}>
             <TrendingUp size={15} className="mb-2 opacity-80" />
-            <p className="text-[14px] font-bold leading-tight" style={{ fontVariantNumeric:'tabular-nums', wordBreak:'break-all' }}>{fmt(totalIncome)}</p>
+            <p className="text-[15px] font-bold leading-tight" style={{ fontVariantNumeric:'tabular-nums', wordBreak:'break-all' }}>{fmt(totalIncome)}</p>
             <p className="text-[10px] opacity-75 mt-1">Receitas</p>
           </div>
+
+          {/* A Receber */}
+          <div className="rounded-2xl p-4" style={{
+            background: isDark ? 'rgba(245,158,11,0.1)' : 'rgba(245,158,11,0.08)',
+            border: '1px solid rgba(245,158,11,0.28)' }}>
+            <div className="flex items-center justify-between mb-2">
+              <DollarSign size={15} style={{ color: '#F59E0B' }} />
+              <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#F59E0B' }} />
+            </div>
+            <p className="text-[15px] font-bold leading-tight" style={{ color: '#F59E0B', fontVariantNumeric:'tabular-nums', wordBreak:'break-all' }}>{fmt(totalPending)}</p>
+            <p className="text-[10px] mt-1" style={{ color: '#B45309' }}>A Receber</p>
+          </div>
+
+          {/* Despesas */}
           <div className="rounded-2xl p-4" style={{ background: c.card, border: `1px solid ${c.border}` }}>
-            <TrendingDown size={15} className="mb-2 text-[#E5484D]" />
-            <p className="text-[14px] font-bold leading-tight" style={{ color: c.t1, fontVariantNumeric:'tabular-nums', wordBreak:'break-all' }}>{fmt(totalExpense)}</p>
+            <TrendingDown size={15} className="mb-2 text-[#EF4444]" />
+            <p className="text-[15px] font-bold leading-tight" style={{ color: c.t1, fontVariantNumeric:'tabular-nums', wordBreak:'break-all' }}>{fmt(totalExpense)}</p>
             <p className="text-[10px] mt-1" style={{ color: c.muted }}>Despesas</p>
           </div>
+
+          {/* Saldo */}
           <div className="rounded-2xl p-4" style={{ background: c.card, border: `1px solid ${c.border}` }}>
-            <DollarSign size={15} className={`mb-2 ${totalIncome-totalExpense>=0?'text-[#1D6EF7]':'text-[#E5484D]'}`} />
-            <p className="text-[14px] font-bold leading-tight" style={{ color: totalIncome-totalExpense>=0?c.t1:'#E5484D', fontVariantNumeric:'tabular-nums', wordBreak:'break-all' }}>{fmt(totalIncome-totalExpense)}</p>
+            <DollarSign size={15} className={`mb-2 ${totalIncome-totalExpense>=0?'text-[#1D6EF7]':'text-[#EF4444]'}`} />
+            <p className="text-[15px] font-bold leading-tight" style={{ color: totalIncome-totalExpense>=0?c.t1:'#EF4444', fontVariantNumeric:'tabular-nums', wordBreak:'break-all' }}>{fmt(totalIncome-totalExpense)}</p>
             <p className="text-[10px] mt-1" style={{ color: c.muted }}>Saldo</p>
           </div>
         </div>

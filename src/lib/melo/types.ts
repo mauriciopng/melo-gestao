@@ -119,9 +119,10 @@ export interface DocumentItem {
 }
 
 export interface DashboardSummary {
-  totalIncome: number;
+  totalIncome: number;    // receitas confirmadas no mês atual
   totalExpenses: number;
   netProfit: number;
+  totalPending: number;   // total A Receber (todos os meses, apenas pendentes)
   activeServices: number;
   pendingServices: number;
   completedServices: number;

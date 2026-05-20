@@ -76,7 +76,8 @@ export default function DashboardPage() {
       .then(r => r.json()).then(d => { setData(d); setLoading(false); });
   }, []);
 
-  const profit     = data?.netProfit ?? 0;
+  const profit     = data?.netProfit   ?? 0;
+  const pending    = data?.totalPending ?? 0;
   const isPositive = profit >= 0;
 
   return (
@@ -140,34 +141,52 @@ export default function DashboardPage() {
                 <p style={{ fontSize: 11, color: 'rgba(191,219,254,0.7)' }}>Este mês</p>
               </div>
 
-              {/* Expenses + Profit stacked */}
+              {/* Expenses + Profit + A Receber stacked */}
               <div className="flex flex-col gap-2 min-w-0">
-                <Card style={{ padding: '14px 16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                <Card style={{ padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
                       letterSpacing: '0.12em', color: c.muted }}>Despesas</span>
-                    <TrendDown size={12} color="#EF4444" weight="bold" />
+                    <TrendDown size={11} color="#EF4444" weight="bold" />
                   </div>
-                  <p style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.03em',
+                  <p style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.03em',
                     color: c.t1, fontVariantNumeric: 'tabular-nums', wordBreak: 'break-all' }}>
                     {fmt(data?.totalExpenses ?? 0)}
                   </p>
                 </Card>
 
-                <Card style={{ padding: '14px 16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                      letterSpacing: '0.12em', color: c.muted }}>Lucro</span>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%',
+                <Card style={{ padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.12em', color: c.muted }}>Saldo</span>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%',
                       background: isPositive ? '#16A34A' : '#EF4444',
-                      boxShadow: `0 0 6px ${isPositive ? '#16A34A88' : '#EF444488'}` }} />
+                      boxShadow: `0 0 5px ${isPositive ? '#16A34A88' : '#EF444488'}` }} />
                   </div>
-                  <p style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.03em',
+                  <p style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.03em',
                     color: isPositive ? '#16A34A' : '#EF4444',
                     fontVariantNumeric: 'tabular-nums', wordBreak: 'break-all' }}>
                     {fmt(profit)}
                   </p>
                 </Card>
+
+                {/* A Receber */}
+                <div style={{
+                  borderRadius: 14, padding: '12px 14px',
+                  background: isDark ? 'rgba(245,158,11,0.1)' : 'rgba(245,158,11,0.08)',
+                  border: '1px solid rgba(245,158,11,0.25)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.12em', color: '#B45309' }}>A Receber</span>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%',
+                      background: '#F59E0B', boxShadow: '0 0 5px rgba(245,158,11,0.6)' }} />
+                  </div>
+                  <p style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.03em',
+                    color: '#F59E0B', fontVariantNumeric: 'tabular-nums', wordBreak: 'break-all' }}>
+                    {fmt(pending)}
+                  </p>
+                </div>
               </div>
             </div>
 
