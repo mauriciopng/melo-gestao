@@ -7,7 +7,9 @@ export interface FinanceEntry {
   date: string;
   client: string;
   createdAt: string;
-  source?: 'form' | 'chat';
+  source?: 'form' | 'chat' | 'service';
+  serviceId?: string;   // vínculo com o serviço que gerou esta entrada
+  isPending?: boolean;  // true para entradas "A RECEBER" ainda não confirmadas
 }
 
 export interface AgendaEvent {

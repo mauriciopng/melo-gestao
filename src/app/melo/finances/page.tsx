@@ -29,14 +29,16 @@ const EXPENSE_CATS = [
 
 /* ── Chat / business expense categories ── */
 const CHAT_CATS: Record<string, { label: string; color: string }> = {
-  MATERIAL:      { label: 'Material',      color: '#FF9F0A' },
-  'ALIMENTAÇÃO': { label: 'Alimentação',   color: '#32D74B' },
-  FIXAS:         { label: 'Fixas',         color: '#BF5AF2' },
-  'COMBUSTÍVEL': { label: 'Combustível',   color: '#FF453A' },
-  'PEDÁGIO':     { label: 'Pedágio',       color: '#64D2FF' },
-  'FUNCIONÁRIOS':{ label: 'Funcionários',  color: '#FFD60A' },
-  CONTAS:        { label: 'Contas',        color: '#0A84FF' },
-  MARCELO:       { label: 'Marcelo',       color: '#FF375F' },
+  MATERIAL:        { label: 'Material',        color: '#FF9F0A' },
+  'ALIMENTAÇÃO':   { label: 'Alimentação',     color: '#32D74B' },
+  FIXAS:           { label: 'Fixas',           color: '#BF5AF2' },
+  'COMBUSTÍVEL':   { label: 'Combustível',     color: '#FF453A' },
+  'PEDÁGIO':       { label: 'Pedágio',         color: '#64D2FF' },
+  'FUNCIONÁRIOS':  { label: 'Funcionários',    color: '#FFD60A' },
+  CONTAS:          { label: 'Contas',          color: '#0A84FF' },
+  MARCELO:         { label: 'Marcelo',         color: '#FF375F' },
+  RECEITA_SERVICO: { label: 'Serviços',        color: '#1D6EF7' },
+  A_RECEBER:       { label: 'A Receber',       color: '#F59E0B' },
 };
 
 const CATEGORY_PARSE: [RegExp, string][] = [
@@ -386,13 +388,24 @@ export default function FinancesPage() {
                       {catCfg ? catCfg.label[0] : (e.type==='income'?'↑':'↓')}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: c.t1 }}>{e.description || CAT_LABEL[e.category] || e.category}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium truncate" style={{ color: c.t1 }}>
+                          {e.description || CAT_LABEL[e.category] || e.category}
+                        </p>
+                        {e.isPending && (
+                          <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 8, fontWeight: 700,
+                            background: 'rgba(245,158,11,0.15)', color: '#F59E0B', flexShrink: 0,
+                            textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Pendente
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs" style={{ color: c.muted }}>
                         {new Date(e.date+'T12:00:00').toLocaleDateString('pt-BR')} · {CAT_LABEL[e.category] || e.category}
                       </p>
                     </div>
                     <span className="text-sm font-semibold tabular-nums flex-shrink-0"
-                      style={{ color: catCfg ? catCfg.color : (e.type==='income'?'#16A34A':'#E5484D') }}>
+                      style={{ color: e.isPending ? '#F59E0B' : (catCfg ? catCfg.color : (e.type==='income'?'#16A34A':'#E5484D')) }}>
                       {e.type==='income'?'+':'-'}{fmt(e.amount)}
                     </span>
                     <button onClick={() => openEdit(e)} className="flex-shrink-0 hover:opacity-70 transition-opacity" style={{ color: c.muted }}>

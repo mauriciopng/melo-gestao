@@ -165,12 +165,13 @@ function ServiceDetail({
 
   async function confirmRemaining() {
     setSavingConfirm(true);
+    // Atualiza o serviço — a API de serviços re-sincroniza as finanças automaticamente
     await fetch('/api/melo/services', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
       body: JSON.stringify({
-        id: service.id,
-        remainingReceived: true,
+        id:                    service.id,
+        remainingReceived:     true,
         remainingReceivedDate: confirmDate,
       }),
     });
