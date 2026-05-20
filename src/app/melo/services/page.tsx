@@ -63,9 +63,14 @@ function ServiceDetail({
   const [newComment, setNewComment] = useState('');
   const [commentPublic, setCommentPublic] = useState(false);
   const [stageModal, setStageModal] = useState(false);
-  const [savingStage, setSavingStage]   = useState(false);
-  const [savingCmt, setSavingCmt]       = useState(false);
-  const [copied, setCopied]             = useState(false);
+  const [savingStage,   setSavingStage]   = useState(false);
+  const [savingCmt,     setSavingCmt]     = useState(false);
+  const [copied,        setCopied]        = useState(false);
+
+  // Confirmação de recebimento
+  const [showConfirm,    setShowConfirm]    = useState(false);
+  const [confirmDate,    setConfirmDate]    = useState(new Date().toISOString().split('T')[0]);
+  const [savingConfirm,  setSavingConfirm]  = useState(false);
 
   const clientLink = typeof window !== 'undefined'
     ? `${window.location.origin}/melo/cliente/${service.clientToken}`
@@ -158,6 +163,22 @@ function ServiceDetail({
     onUpdate({ ...service, comments: updated });
   }
 
+  async function confirmRemaining() {
+    setSavingConfirm(true);
+    await fetch('/api/melo/services', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
+      body: JSON.stringify({
+        id: service.id,
+        remainingReceived: true,
+        remainingReceivedDate: confirmDate,
+      }),
+    });
+    onUpdate({ ...service, remainingReceived: true, remainingReceivedDate: confirmDate });
+    setShowConfirm(false);
+    setSavingConfirm(false);
+  }
+
   const completedCount = stages.filter(s => s.status === 'concluido').length;
   const progressPct = stages.length > 0 ? Math.round((completedCount / stages.length) * 100) : 0;
 
@@ -242,6 +263,134 @@ function ServiceDetail({
           </div>
         )}
       </div>
+
+      {/* ── Pagamento Sinal — confirmação do restante ── */}
+      {service.paymentType === 'sinal' && service.remainingValue != null && service.remainingValue > 0 && (
+        <div className="rounded-2xl overflow-hidden" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+          {/* Header */}
+          <div className="px-5 py-3.5 flex items-center justify-between"
+            style={{ borderBottom: `1px solid ${c.border}` }}>
+            <span className="font-semibold text-[14px]" style={{ color: c.t1 }}>Pagamento</span>
+            {service.remainingReceived && (
+              <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 700,
+                background: 'rgba(22,163,74,0.15)', color: '#16A34A' }}>
+                Quitado
+              </span>
+            )}
+          </div>
+
+          <div className="px-5 py-4 space-y-3">
+            {/* Sinal recebido */}
+            {service.signalValue != null && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#16A34A' }} />
+                  <span className="text-[13px]" style={{ color: c.t1 }}>Sinal recebido</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[14px] font-bold" style={{ color: '#16A34A' }}>
+                    {fmt(service.signalValue)}
+                  </span>
+                  {service.signalDate && (
+                    <p className="text-[10px]" style={{ color: c.muted }}>
+                      {new Date(service.signalDate + 'T12:00:00').toLocaleDateString('pt-BR')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Restante */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div style={{ width: 8, height: 8, borderRadius: '50%',
+                  background: service.remainingReceived ? '#16A34A' : '#1D6EF7' }} />
+                <span className="text-[13px]" style={{ color: c.t1 }}>
+                  {service.remainingReceived ? 'Restante recebido' : 'A receber'}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-[14px] font-bold"
+                  style={{ color: service.remainingReceived ? '#16A34A' : '#1D6EF7' }}>
+                  {fmt(service.remainingValue)}
+                </span>
+                <p className="text-[10px]" style={{ color: c.muted }}>
+                  {service.remainingReceived && service.remainingReceivedDate
+                    ? `Recebido em ${new Date(service.remainingReceivedDate + 'T12:00:00').toLocaleDateString('pt-BR')}`
+                    : service.remainingDate
+                      ? `Previsto: ${new Date(service.remainingDate + 'T12:00:00').toLocaleDateString('pt-BR')}`
+                      : ''}
+                </p>
+              </div>
+            </div>
+
+            {/* Total */}
+            {service.signalValue != null && (
+              <div className="pt-2 flex items-center justify-between"
+                style={{ borderTop: `1px solid ${c.border}` }}>
+                <span className="text-[12px] font-semibold" style={{ color: c.muted }}>TOTAL</span>
+                <span className="text-[14px] font-bold" style={{ color: c.t1 }}>
+                  {fmt(service.value)}
+                </span>
+              </div>
+            )}
+
+            {/* Botão confirmar / form */}
+            {!service.remainingReceived && (
+              <div>
+                {!showConfirm ? (
+                  <button type="button" onClick={() => setShowConfirm(true)}
+                    className="w-full py-3 rounded-xl text-[13px] font-semibold text-white active:scale-[0.98] transition-all"
+                    style={{ background: 'linear-gradient(135deg,#16A34A,#15803D)',
+                      boxShadow: '0 2px 12px rgba(22,163,74,0.3)' }}>
+                    Confirmar Recebimento
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10,
+                    padding: '14px', borderRadius: 14,
+                    background: isDark ? 'rgba(22,163,74,0.08)' : 'rgba(22,163,74,0.06)',
+                    border: '1px solid rgba(22,163,74,0.2)' }}>
+                    <p className="text-[12px] font-semibold" style={{ color: '#16A34A' }}>
+                      Confirmar data de recebimento
+                    </p>
+                    <input
+                      type="date"
+                      value={confirmDate}
+                      onChange={e => setConfirmDate(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#16A34A]"
+                      style={{ background: c.ib, border: `1px solid rgba(22,163,74,0.3)`,
+                        color: c.it, width: '100%', boxSizing: 'border-box' as const }} />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button type="button" onClick={() => setShowConfirm(false)}
+                        className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold transition-all"
+                        style={{ background: c.card, border: `1px solid ${c.border}`, color: c.muted }}>
+                        Cancelar
+                      </button>
+                      <button type="button" onClick={confirmRemaining} disabled={savingConfirm || !confirmDate}
+                        className="flex-[2] py-2.5 rounded-xl text-[13px] font-semibold text-white disabled:opacity-40 active:scale-[0.98] transition-all"
+                        style={{ background: 'linear-gradient(135deg,#16A34A,#15803D)' }}>
+                        {savingConfirm ? 'Salvando...' : `Confirmar — ${confirmDate ? new Date(confirmDate + 'T12:00:00').toLocaleDateString('pt-BR') : ''}`}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Estado: já recebido */}
+            {service.remainingReceived && service.remainingReceivedDate && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                padding: '10px', borderRadius: 12,
+                background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.2)' }}>
+                <CheckCircle size={16} color="#16A34A" weight="fill" />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#16A34A' }}>
+                  Recebido em {new Date(service.remainingReceivedDate + 'T12:00:00').toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Stages ── */}
       <div>

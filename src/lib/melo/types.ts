@@ -61,10 +61,12 @@ export interface Service {
   comments: ServiceComment[];
   // Forma de pagamento
   paymentType?: 'total' | 'sinal';
-  signalValue?: number;   // valor do sinal recebido
-  signalDate?: string;    // data do sinal
-  remainingValue?: number;  // valor a receber
-  remainingDate?: string;   // data prevista para receber
+  signalValue?: number;           // valor do sinal recebido
+  signalDate?: string;            // data do sinal
+  remainingValue?: number;        // valor a receber
+  remainingDate?: string;         // data prevista para receber
+  remainingReceived?: boolean;    // true quando restante foi confirmado
+  remainingReceivedDate?: string; // data real do recebimento confirmado
 }
 
 export interface Reminder {
