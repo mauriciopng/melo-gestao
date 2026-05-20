@@ -169,13 +169,25 @@ export default function AdminControls({ serviceId, initialStages }: Props) {
 
   if (mode === 'hidden') {
     return (
-      <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+      <div style={{ marginTop: '2rem' }}>
         <button onClick={() => setMode('login')} style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: 'rgba(255,255,255,0.2)', fontSize: 11, fontFamily: 'inherit',
-          textDecoration: 'underline', touchAction: 'manipulation',
+          width: '100%',
+          padding: '12px 16px',
+          borderRadius: 14,
+          background: 'rgba(255,255,255,0.07)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          color: 'rgba(255,255,255,0.55)',
+          fontSize: 13,
+          fontWeight: 600,
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+          touchAction: 'manipulation',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
         }}>
-          Acesso do responsável
+          🔑 Acesso do responsável
         </button>
       </div>
     );
