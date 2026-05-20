@@ -445,6 +445,7 @@ export default function DocumentsPage() {
                     setAlfaLoading(true);
                     const parsed = parseAlfaGlass(alfaInput);
                     setAlfaParsed(parsed);
+                    // Gera HTML preview
                     const res = await fetch('/api/melo/documents/orcamento-pdf', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
@@ -457,7 +458,7 @@ export default function DocumentsPage() {
                   }} disabled={!alfaInput.trim() || alfaLoading}
                     className="w-full mt-3 py-3 rounded-xl font-semibold text-[14px] text-white disabled:opacity-40 active:scale-[0.98] transition-all"
                     style={{ background: 'linear-gradient(135deg,#1a3a6b,#0d2456)', boxShadow: '0 2px 12px rgba(26,58,107,0.4)' }}>
-                    {alfaLoading ? 'Gerando prévia...' : 'Gerar Prévia do Orçamento'}
+                    {alfaLoading ? 'Gerando prévia...' : 'Gerar Prévia'}
                   </button>
                 </div>
               </div>
@@ -478,7 +479,38 @@ export default function DocumentsPage() {
 
                 {/* Actions */}
                 <div className="space-y-2">
-                  {/* PDF */}
+                  {/* Download DOCX — arquivo original preenchido */}
+                  <button onClick={async () => {
+                    if (!alfaParsed) return;
+                    setAlfaLoading(true);
+                    try {
+                      const res = await fetch('/api/melo/documents/fill-docx', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
+                        body: JSON.stringify({
+                          clienteNome: alfaParsed.clienteNome, clienteCpfCnpj: alfaParsed.clienteCpfCnpj,
+                          clienteIE: alfaParsed.clienteIE, clienteData: alfaParsed.data,
+                          clienteOS: alfaParsed.os, clienteEndereco: alfaParsed.clienteEndereco,
+                          clienteBairro: alfaParsed.clienteBairro, clienteCep: alfaParsed.clienteCep,
+                          formasPagamento: alfaParsed.formasPagamento, total: alfaParsed.total,
+                          itens: alfaParsed.itens,
+                        }),
+                      });
+                      if (!res.ok) throw new Error('Erro');
+                      const blob = await res.blob();
+                      const url  = URL.createObjectURL(blob);
+                      const a    = document.createElement('a');
+                      a.href = url; a.download = `Orcamento_${alfaParsed.clienteNome || 'Cliente'}.docx`; a.click();
+                      URL.revokeObjectURL(url);
+                    } catch { alert('Erro ao gerar o documento.'); }
+                    setAlfaLoading(false);
+                  }} disabled={alfaLoading}
+                    className="w-full py-3 rounded-xl font-semibold text-[14px] text-white disabled:opacity-40 active:scale-[0.98] transition-all"
+                    style={{ background: 'linear-gradient(135deg,#1a3a6b,#0d2456)', boxShadow: '0 2px 12px rgba(26,58,107,0.4)' }}>
+                    {alfaLoading ? 'Gerando...' : 'Baixar .docx — Arquivo Original Preenchido'}
+                  </button>
+
+                  {/* PDF via print */}
                   <button onClick={() => {
                     const w = window.open('', '_blank');
                     if (!w) return;
@@ -486,9 +518,9 @@ export default function DocumentsPage() {
                     w.document.close();
                     setTimeout(() => w.print(), 600);
                   }}
-                    className="w-full py-3 rounded-xl font-semibold text-[14px] text-white active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                    style={{ background: 'linear-gradient(135deg,#16A34A,#15803D)', boxShadow: '0 2px 12px rgba(22,163,74,0.3)' }}>
-                    Exportar PDF
+                    className="w-full py-3 rounded-xl font-semibold text-[13px] active:scale-[0.98] transition-all"
+                    style={{ background: c.card, border: `1px solid ${c.border}`, color: c.t1 }}>
+                    Exportar PDF (imprimir prévia)
                   </button>
 
                   {/* Save to DB */}
