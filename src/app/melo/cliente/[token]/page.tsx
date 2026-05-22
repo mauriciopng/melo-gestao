@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import { readDb } from '@/lib/melo/db';
 import type { Service, ServiceStage, ServiceComment } from '@/lib/melo/types';
-import AdminControls from './AdminControls';
 
-export const dynamic = 'force-dynamic';
+// Página do cliente: sempre renderizada do zero, sem cache, link nunca expira
+export const dynamic    = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 export const metadata: Metadata = {
   title: 'Acompanhamento de Obra',
@@ -87,11 +89,15 @@ export default async function ClientPage({ params }: { params: Promise<{ token: 
   return (
     <div style={{
       minHeight: '100dvh',
+      maxHeight: '100dvh',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch',
+      overscrollBehavior: 'contain',
       background: 'linear-gradient(160deg, #0d1a2f 0%, #091320 60%, #060d1a 100%)',
       fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
       color: '#fff',
-      paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
-    }}>
+      paddingBottom: 'calc(3rem + env(safe-area-inset-bottom))',
+    } as React.CSSProperties}>
       {/* Header */}
       <div style={{
         background: 'rgba(255,255,255,0.04)',
@@ -216,9 +222,6 @@ export default async function ClientPage({ params }: { params: Promise<{ token: 
             </div>
           </div>
         )}
-
-        {/* Admin controls — visíveis apenas para o dono do app (token válido no dispositivo) */}
-        <AdminControls serviceId={service.id} initialStages={service.stages} />
 
         {/* Footer */}
         <div style={{ textAlign: 'center', paddingTop: '0.5rem' }}>

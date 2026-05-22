@@ -72,6 +72,12 @@ function ServiceDetail({
   const [confirmDate,    setConfirmDate]    = useState(new Date().toISOString().split('T')[0]);
   const [savingConfirm,  setSavingConfirm]  = useState(false);
 
+  // Editar etapa
+  const [editingStageId, setEditingStageId] = useState<string | null>(null);
+  const [editStageName,  setEditStageName]  = useState('');
+  const [editStageDesc,  setEditStageDesc]  = useState('');
+  const [savingEditStage, setSavingEditStage] = useState(false);
+
   const clientLink = typeof window !== 'undefined'
     ? `${window.location.origin}/melo/cliente/${service.clientToken}`
     : '';
@@ -111,6 +117,17 @@ function ServiceDetail({
       body: JSON.stringify({ serviceId: service.id, stageId, status }),
     });
     const updated = stages.map(s => s.id === stageId ? { ...s, status } : s);
+    setStages(updated);
+    onUpdate({ ...service, stages: updated });
+  }
+
+  async function editStage(stageId: string, name: string, description: string) {
+    await fetch('/api/melo/services/stages', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` },
+      body: JSON.stringify({ serviceId: service.id, stageId, name, description }),
+    });
+    const updated = stages.map(s => s.id === stageId ? { ...s, name, description } : s);
     setStages(updated);
     onUpdate({ ...service, stages: updated });
   }
@@ -412,9 +429,11 @@ function ServiceDetail({
         ) : (
           <div className="space-y-2">
             {stages.map((stage, idx) => {
-              const color = STAGE_COLORS[stage.status];
+              const color     = STAGE_COLORS[stage.status];
+              const isEditing = editingStageId === stage.id;
               return (
-                <div key={stage.id} className="rounded-2xl p-4" style={{ background: c.card, border: `1px solid ${c.border}` }}>
+                <div key={stage.id} className="rounded-2xl p-4"
+                  style={{ background: c.card, border: `1px solid ${isEditing ? '#1D6EF7' : c.border}` }}>
                   <div className="flex items-start gap-3">
                     <button onClick={() => {
                       const next: ServiceStage['status'] = stage.status === 'pendente' ? 'em_andamento' : stage.status === 'em_andamento' ? 'concluido' : 'pendente';
@@ -446,10 +465,80 @@ function ServiceDetail({
                         </p>
                       )}
                     </div>
-                    <button onClick={() => deleteStage(stage.id)} className="flex-shrink-0 active:opacity-60 transition-opacity" style={{ color: c.muted }}>
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {/* Botão Editar */}
+                      <button onClick={() => {
+                        if (isEditing) { setEditingStageId(null); }
+                        else {
+                          setEditingStageId(stage.id);
+                          setEditStageName(stage.name);
+                          setEditStageDesc(stage.description || '');
+                        }
+                      }}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold active:scale-90 transition-all"
+                        style={{
+                          background: isEditing ? 'rgba(29,110,247,0.18)' : 'rgba(29,110,247,0.08)',
+                          color: '#1D6EF7',
+                          border: isEditing ? '1px solid #1D6EF7' : '1px solid rgba(29,110,247,0.2)',
+                        }}>
+                        ✎
+                      </button>
+                      <button onClick={() => deleteStage(stage.id)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center active:opacity-60 transition-opacity"
+                        style={{ background: 'rgba(229,72,77,0.08)', color: '#E5484D', border: '1px solid rgba(229,72,77,0.2)' }}>
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Formulário inline de edição */}
+                  {isEditing && (
+                    <form onSubmit={async e => {
+                      e.preventDefault();
+                      if (!editStageName.trim()) return;
+                      setSavingEditStage(true);
+                      await editStage(stage.id, editStageName.trim(), editStageDesc.trim());
+                      setSavingEditStage(false);
+                      setEditingStageId(null);
+                    }}
+                      style={{
+                        marginTop: 12, paddingTop: 12,
+                        borderTop: `1px solid ${c.border}`,
+                        display: 'flex', flexDirection: 'column', gap: 10,
+                      }}>
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: c.muted }}>
+                          Nome da etapa
+                        </label>
+                        <input autoFocus required value={editStageName}
+                          onChange={e => setEditStageName(e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1D6EF7]"
+                          style={{ background: c.ib, border: `1px solid ${c.ibr}`, color: c.it, boxSizing: 'border-box' }} />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: c.muted }}>
+                          Descrição
+                        </label>
+                        <input value={editStageDesc}
+                          onChange={e => setEditStageDesc(e.target.value)}
+                          placeholder="Detalhes desta etapa..."
+                          className="w-full px-4 py-2.5 rounded-xl text-[14px] outline-none focus:ring-2 focus:ring-[#1D6EF7]"
+                          style={{ background: c.ib, border: `1px solid ${c.ibr}`, color: c.it, boxSizing: 'border-box' }} />
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => setEditingStageId(null)}
+                          className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold active:scale-[0.98] transition-all"
+                          style={{ background: c.card, border: `1px solid ${c.border}`, color: c.muted }}>
+                          Cancelar
+                        </button>
+                        <button type="submit" disabled={savingEditStage || !editStageName.trim()}
+                          className="flex-[2] py-2.5 rounded-xl text-[13px] font-semibold text-white disabled:opacity-40 active:scale-[0.98] transition-all"
+                          style={{ background: 'linear-gradient(135deg,#1D6EF7,#1249C2)' }}>
+                          {savingEditStage ? 'Salvando...' : 'Salvar Alterações'}
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               );
             })}
