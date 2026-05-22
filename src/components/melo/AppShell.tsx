@@ -27,7 +27,10 @@ const MOBILE_NAV = [
   { href: '/melo/finances',   icon: CurrencyDollar, label: 'Finanças' },
   { href: '/melo/agenda',     icon: Calendar,       label: 'Agenda' },
   { href: '/melo/services',   icon: Briefcase,      label: 'Serviços' },
+  { href: '/melo/documents',  icon: FolderOpen,     label: 'Docs' },
+  { href: '/melo/reminders',  icon: Bell,           label: 'Alarmes' },
   { href: '/melo/statistics', icon: ChartLineUp,    label: 'Stats' },
+  { href: '/melo/help',       icon: Question,       label: 'Ajuda' },
 ];
 
 const NOTIF_INTERVAL_MS = 4 * 60 * 60 * 1000;
@@ -273,14 +276,15 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* ── Mobile: Floating Pill Nav ── */}
+      {/* ── Mobile: Floating Pill Nav ──
+          left:12/right:12 + flex:1 garante que todos os 8 itens caibam
+          uniformemente na largura do iPhone, sem corte. */}
       <nav className="md:hidden" style={{
         position: 'fixed',
-        bottom: 'max(1.25rem, calc(env(safe-area-inset-bottom) + 0.5rem))',
-        left: '50%',
-        transform: 'translateX(-50%)',
+        bottom: 'max(0.75rem, calc(env(safe-area-inset-bottom) + 0.25rem))',
+        left: 12,
+        right: 12,
         zIndex: 40,
-        maxWidth: 'calc(100vw - 24px)',  /* nunca ultrapassa a largura da tela */
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
         background: isDark ? 'rgba(14,14,12,0.86)' : 'rgba(252,252,250,0.88)',
@@ -291,32 +295,42 @@ function ShellInner({ children }: { children: React.ReactNode }) {
           : '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9)',
         display: 'flex',
         alignItems: 'center',
-        padding: '5px',
-        gap: 2,
+        justifyContent: 'space-around',
+        padding: '5px 3px',
       }}>
         {MOBILE_NAV.map(({ href, icon: Icon, label }) => {
           const active = pathname === href;
           return (
-            <Link key={href} href={href} style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 3,
-              padding: '8px 13px',
-              borderRadius: 9999,
-              textDecoration: 'none',
-              background: active ? c.accentMuted : 'transparent',
-              transition: `all 200ms ${ease}`,
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-            }}>
-              <Icon size={20} weight={active ? 'fill' : 'regular'}
+            <Link
+              key={href}
+              href={href}
+              prefetch
+              style={{
+                flex: 1,
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
+                padding: '6px 2px',
+                borderRadius: 9999,
+                textDecoration: 'none',
+                background: active ? c.accentMuted : 'transparent',
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              <Icon size={18} weight={active ? 'fill' : 'regular'}
                 color={active ? c.accent : (isDark ? '#6C6C64' : '#9C9C94')} />
               <span style={{
-                fontSize: 9, fontWeight: 700,
+                fontSize: 8, fontWeight: 700,
                 color: active ? c.accent : (isDark ? '#5A5A54' : '#9C9C94'),
-                letterSpacing: '0.04em',
+                letterSpacing: '0.02em',
                 textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '100%',
               }}>
                 {label}
               </span>

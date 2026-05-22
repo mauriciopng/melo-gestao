@@ -92,7 +92,7 @@ export default function DashboardPage() {
           </p>
           <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.03em',
             color: c.t1, lineHeight: 1.2 }}>
-            {greeting()}, Maurício
+            {greeting()}, Marcelo
           </h1>
         </div>
 
