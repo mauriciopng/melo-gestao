@@ -164,7 +164,7 @@ ${content.notes ? `
 </div>
 
 <div class="footer">
-  Documento gerado pelo sistema Melo Digital
+  Documento gerado pelo sistema Alfa Glass
 </div>
 
 </body>

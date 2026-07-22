@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const sent = await sendPush(
-    'Melo Digital Studio',
+    'Alfa Glass',
     'Notificações funcionando! Seus alarmes estão ativos.',
     '/melo/dashboard',
     'test'

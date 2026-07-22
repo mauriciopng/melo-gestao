@@ -1,18 +1,18 @@
-/* ── Melo Digital Studio — Service Worker ── */
+/* ── Alfa Glass — Service Worker ── */
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 
 /* Recebe notificação push e exibe */
 self.addEventListener('push', event => {
-  let data = { title: 'Melo Digital Studio', body: 'Nova notificação', url: '/melo/dashboard', tag: 'melo' };
+  let data = { title: 'Alfa Glass', body: 'Nova notificação', url: '/melo/dashboard', tag: 'melo' };
   try { data = { ...data, ...event.data.json() }; } catch {}
 
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: '/melo-logo.png',
-      badge: '/melo-logo.png',
+      icon: '/alfaglass-icon.png',
+      badge: '/alfaglass-icon.png',
       tag: data.tag,
       data: { url: data.url },
       requireInteraction: false,

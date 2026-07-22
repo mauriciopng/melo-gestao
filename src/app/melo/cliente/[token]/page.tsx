@@ -106,9 +106,7 @@ export default async function ClientPage({ params }: { params: Promise<{ token: 
         backdropFilter: 'blur(20px)',
       }}>
         <div style={{ maxWidth: 560, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(145deg,#1D6EF7,#1249C2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16, flexShrink: 0, boxShadow: '0 4px 12px rgba(29,110,247,0.3)' }}>
-            M
-          </div>
+          <img src="/alfaglass-icon.png" alt="Alfa Glass" style={{ width: 40, height: 40, borderRadius: 12, objectFit: 'cover', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.35)' }} />
           <div>
             <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Acompanhamento de Obra</p>
             <p style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginTop: 1 }}>{service.client}</p>
@@ -226,7 +224,7 @@ export default async function ClientPage({ params }: { params: Promise<{ token: 
         {/* Footer */}
         <div style={{ textAlign: 'center', paddingTop: '0.5rem' }}>
           <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
-            Melo Digital — Acompanhamento de Obra
+            Alfa Glass — Acompanhamento de Obra
           </p>
           <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.15)', marginTop: 2 }}>
             Esta página é exclusiva para o acompanhamento deste serviço

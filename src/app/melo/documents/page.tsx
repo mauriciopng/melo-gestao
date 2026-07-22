@@ -719,7 +719,7 @@ Pagamento: 50% no início, 50% na entrega`}
                       <ol className="list-decimal pl-4 space-y-1">
                         <li>Acesse <span className="font-mono">portal.azure.com</span></li>
                         <li>Azure Active Directory → Registros de aplicativo → Novo registro</li>
-                        <li>Nome: Melo Digital · URI de redirecionamento: Web → URL do app + /melo/documents</li>
+                        <li>Nome: Alfa Glass · URI de redirecionamento: Web → URL do app + /melo/documents</li>
                         <li>Em "Autenticação" → Conceder tokens de acesso (fluxo implícito)</li>
                         <li>Copie o "ID do aplicativo (cliente)"</li>
                       </ol>

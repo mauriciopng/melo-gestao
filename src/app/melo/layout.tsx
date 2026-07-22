@@ -10,14 +10,14 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Melo Digital Studio',
-  description: 'Gestão do seu negócio criativo',
+  title: 'Alfa Glass',
+  description: 'Soluções em Engenharia — Gestão',
   manifest: '/melo-manifest.json',
   icons: {
     icon: [
-      { url: '/melo-logo.png', type: 'image/png' },
+      { url: '/alfaglass-icon.png', type: 'image/png' },
     ],
-    shortcut: '/melo-logo.png',
+    shortcut: '/alfaglass-icon.png',
     apple: [
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',   // status bar transparente — cor do app aparece atrás
-    title: 'Melo Digital',
+    title: 'Alfa Glass',
   },
 };
 

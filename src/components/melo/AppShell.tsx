@@ -122,7 +122,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const pageTitle = NAV.find(n => n.href === pathname)?.label ?? 'Melo Digital';
+  const pageTitle = NAV.find(n => n.href === pathname)?.label ?? 'Alfa Glass';
 
   const sidebarItem = (active: boolean) => ({
     display: 'flex' as const,
@@ -256,8 +256,8 @@ function ShellInner({ children }: { children: React.ReactNode }) {
 
               {/* Logo avatar */}
               <img
-                src="/melo-logo.png"
-                alt="Melo Digital Studio"
+                src="/alfaglass-icon.png"
+                alt="Alfa Glass"
                 style={{
                   width: 32, height: 32, borderRadius: 9,
                   objectFit: 'cover', flexShrink: 0,

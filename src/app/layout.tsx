@@ -2,19 +2,19 @@ import type { Metadata, Viewport } from 'next';
 import '../../styles/global.css';
 
 export const metadata: Metadata = {
-  title: 'Melo Digital — Gestão',
+  title: 'Alfa Glass — Gestão',
   description: 'Sistema de gestão empresarial',
   manifest: '/melo-manifest.json',
   icons: {
-    icon: [{ url: '/melo-logo.png', type: 'image/png' }],
-    shortcut: '/melo-logo.png',
+    icon: [{ url: '/alfaglass-icon.png', type: 'image/png' }],
+    shortcut: '/alfaglass-icon.png',
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
     other: [{ rel: 'apple-touch-icon-precomposed', url: '/apple-touch-icon-precomposed.png' }],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Melo Digital',
+    title: 'Alfa Glass',
   },
 };
 

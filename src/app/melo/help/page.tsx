@@ -101,7 +101,7 @@ export default function HelpPage() {
             style={{ background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.3), transparent 60%)' }} />
           <div className="relative">
             <h2 className="text-lg font-bold text-white mb-1">Central de Ajuda</h2>
-            <p className="text-blue-200 text-sm">Melo Digital Studio · Dashboard de Gestão</p>
+            <p className="text-blue-200 text-sm">Alfa Glass · Dashboard de Gestão</p>
           </div>
         </div>
 
@@ -207,7 +207,7 @@ export default function HelpPage() {
         </div>
 
         <div className="text-center pb-4">
-          <p className={`text-xs ${v.muted}`}>Melo Digital Studio Dashboard v1.1</p>
+          <p className={`text-xs ${v.muted}`}>Alfa Glass Dashboard v1.1</p>
           <p className={`text-xs ${v.muted}`}>Dados em data/melo/ · Local Only</p>
         </div>
       </div>
