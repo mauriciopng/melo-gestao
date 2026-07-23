@@ -78,9 +78,8 @@ function ServiceDetail({
   const [editStageDesc,  setEditStageDesc]  = useState('');
   const [savingEditStage, setSavingEditStage] = useState(false);
 
-  const clientLink = typeof window !== 'undefined'
-    ? `${window.location.origin}/melo/cliente/${service.clientToken}`
-    : '';
+  // Domínio público fixo — o link enviado ao cliente nunca menciona a marca antiga
+  const clientLink = `https://alfaglass.vercel.app/cliente/${service.clientToken}`;
 
   async function copyLink() {
     try {

@@ -4,6 +4,8 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/', destination: '/melo', permanent: false },
+      // Links antigos enviados aos clientes continuam funcionando
+      { source: '/melo/cliente/:token', destination: '/cliente/:token', permanent: true },
     ];
   },
 };
