@@ -79,7 +79,8 @@ function ServiceDetail({
   const [savingEditStage, setSavingEditStage] = useState(false);
 
   // Domínio público fixo — o link enviado ao cliente nunca menciona a marca antiga
-  const clientLink = `https://alfaglass.vercel.app/cliente/${service.clientToken}`;
+  // (alfaglass.vercel.app já era de outro usuário; alfa-glass é o domínio do projeto)
+  const clientLink = `https://alfa-glass.vercel.app/cliente/${service.clientToken}`;
 
   async function copyLink() {
     try {
